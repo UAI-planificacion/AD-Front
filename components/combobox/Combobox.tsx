@@ -6,7 +6,6 @@ import {
     useCallback,
     useRef,
     useEffect,
-    useLayoutEffect
 }                   from 'react';
 import type React   from "react";
 
@@ -130,13 +129,6 @@ export function MultiSelectCombobox({
 	const listRef            = useRef<any>( null );
 	const scrollContainerRef = useRef<HTMLDivElement>( null );
 	const triggerRef         = useRef<HTMLButtonElement>( null );
-    const [triggerWidth, setTriggerWidth] = useState<number>(0);
-
-    useLayoutEffect(() => {
-        if (triggerRef.current) {
-            setTriggerWidth(triggerRef.current.offsetWidth)
-        }
-    }, [open, triggerRef])
 
     // Flatten options for virtualization (unchanged)
     const flattenedItems = useMemo(() => {
@@ -411,7 +403,7 @@ export function MultiSelectCombobox({
     }, [scrollContainerRef]);
 
 	return (
-		<Popover open = { isOpen ? true : open } onOpenChange = { setOpen }>
+		<Popover open = { isOpen ? true : open } onOpenChange = { setOpen } modal = { false }>
 			<PopoverTrigger
 				id        = "combobox-trigger"
 				ref       = { triggerRef }
@@ -456,7 +448,7 @@ export function MultiSelectCombobox({
 
 			<PopoverContent
 				className  = "w-full p-0 -mr-1.5 z-9999"
-				style      = { { width : triggerWidth } }
+				style      = { { width : 'var(--anchor-width)' } }
 				align      = "start"
 				side       = "bottom"
 				sideOffset = { 4 }
