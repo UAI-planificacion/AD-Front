@@ -26,7 +26,7 @@ export function Header(): React.JSX.Element {
                             <span className="sr-only">Universidad Adolfo Ibáñez</span>
 
                             <Image
-                                className   = "p-0"
+                                className   = "rounded-lg"
                                 title       = "UAI"
                                 src         = "https://mailing20s.s3.amazonaws.com/templtates/logosinescudo.png"
                                 alt         = "logo uai"
@@ -35,7 +35,7 @@ export function Header(): React.JSX.Element {
                             />
                         </a>
 
-                        <h1 className="hidden sm:flex text-2xl sm:text-xl lg:text-2xl xl:text-3xl font-bold text-white">Nombre Proyecto</h1>
+                        <h1 className="hidden sm:flex text-2xl sm:text-xl lg:text-2xl xl:text-3xl font-bold text-text">Gestión Publicidades</h1>
                     </div>
 				</div>
 
