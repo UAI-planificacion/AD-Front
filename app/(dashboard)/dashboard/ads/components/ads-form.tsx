@@ -93,26 +93,34 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 
 		try {
 			if ( mode === 'edit' && initialData ) {
-				const dto: UpdateAdDto = { edificios };
-				await updateMutation.mutateAsync( { id: initialData.id, dto } );
+				const dto : UpdateAdDto = {
+					nombre			: nombre,
+					fecha_inicio	: fechaInicio,
+					fecha_fin		: fechaFin,
+					hora_inicio		: horaInicio.substring( 0, 5 ),
+					hora_fin		: horaFin.substring( 0, 5 ),
+					duracion		: Number( duracion ),
+					edificios		: edificios,
+				};
+				await updateMutation.mutateAsync( { id : initialData.id, dto } );
 				toast.success( 'Publicidad actualizada correctamente' );
 			} else {
-				const dto: CreateAdDto = {
-					nombre              : nombre,
-					tipo                : tipo,
-					duracion            : duracion,
-					fecha_inicio        : fechaInicio,
-					fecha_fin           : fechaFin,
-					hora_inicio         : horaInicio,
-					hora_fin            : horaFin,
-					archivo_url         : archivoUrl || file?.name || '',
-					archivo_tipo        : file?.type ?? 'image/png',
-					archivo_tamano      : file ? file.size / ( 1024 * 1024 ) : 0,
-					archivo_dimensiones : '384x1080',
-					edificios           : edificios,
-				};
+				const formData = new FormData();
+				formData.append( 'nombre', nombre );
+				if ( file ) {
+					formData.append( 'archivo', file );
+				}
+				formData.append( 'duracion', String( duracion ) );
+				formData.append( 'fecha_inicio', fechaInicio );
+				formData.append( 'fecha_fin', fechaFin );
+				formData.append( 'hora_inicio', horaInicio.substring( 0, 5 ) );
+				formData.append( 'hora_fin', horaFin.substring( 0, 5 ) );
+				formData.append( 'archivo_dimensiones', '384x1080' );
+				edificios.forEach( ( id ) => {
+					formData.append( 'edificios', String( id ) );
+				} );
 
-                await createMutation.mutateAsync( dto );
+				await createMutation.mutateAsync( formData );
 				toast.success( 'Publicidad creada correctamente' );
 			}
 
@@ -124,7 +132,8 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 
 
 	const isCreate          = mode === 'create';
-	const percentage        = (( duracion - 1 ) / ( 120 - 1 )) * 100;
+    const maxDuration       = 60;
+	const percentage        = (( duracion - 1 ) / ( maxDuration - 1 )) * 100;
 	const backgroundStyle   = {
 		background : `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${ percentage }%, var(--color-border) ${ percentage }%, var(--color-border) 100%)`,
 	};
@@ -146,37 +155,9 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 						value       = { nombre }
 						onChange    = { ( e ) => setNombre( e.target.value ) }
 						placeholder = "Ej: Bienvenida Formal 2025"
-						disabled    = { mode === 'edit' }
 						className   = "rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
 					/>
 					{ errors.nombre && <p className="text-xs text-destructive">{ errors.nombre }</p> }
-				</div>
-
-				{ /* Duración */ }
-				<div className="flex flex-col gap-1.5">
-					<label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" htmlFor="ads-duracion">
-						Duración (segundos)
-					</label>
-
-					<div className="flex flex-col mt-2">
-						<input
-							id        = "ads-duracion"
-							type      = "range"
-							min       = { 1 }
-							max       = { 120 }
-							value     = { duracion }
-							onChange  = { ( e ) => setDuracion( Number( e.target.value ) ) }
-							disabled  = { mode === 'edit' }
-							style     = { backgroundStyle }
-							className = "h-1.5 w-full cursor-pointer appearance-none rounded-lg border border-border outline-hidden [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:bg-background [&::-webkit-slider-thumb]:shadow-md"
-						/>
-
-						<div className="flex justify-between text-xs text-muted-foreground mt-1.5 px-0.5 select-none font-medium">
-							<span>1s</span>
-							<span className="font-semibold text-primary">{ duracion }s</span>
-							<span>120s</span>
-						</div>
-					</div>
 				</div>
 
 				{ /* Vigencia */ }
@@ -198,7 +179,6 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
                                         setFechaInicio( range?.from ?? '' );
                                         setFechaFin( range?.to ?? '' );
                                     } }
-                                    disabled = { mode === 'edit' }
                                 />
                                 { ( errors.fechaInicio || errors.fechaFin ) && (
                                     <p className="text-xs text-destructive">
@@ -221,7 +201,6 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
                                         setHoraInicio( start );
                                         setHoraFin( end );
                                     } }
-                                    disabled  = { mode === 'edit' }
                                 />
                             </div>
                         </div>
@@ -245,10 +224,44 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 						<label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 							Archivo de la publicidad
 						</label>
-						<AdsUploader value = { file } onChange = { handleFileChange } />
+
+						<AdsUploader
+							value            = { file }
+							onChange         = { handleFileChange }
+							onDurationDetect = { ( duration ) => setDuracion( Math.round( duration ) ) }
+						/>
+
 						{ errors.archivo && <p className="text-xs text-destructive">{ errors.archivo }</p> }
 					</div>
 				) }
+
+                {/* Duración */}
+                { ( file || ( mode === 'edit' && initialData ) ) && tipo !== 'video' && (
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" htmlFor="ads-duracion">
+                            Duración (segundos)
+                        </label>
+
+                        <div className="flex flex-col mt-2">
+                            <input
+                                id        = "ads-duracion"
+                                type      = "range"
+                                min       = { 1 }
+                                max       = { maxDuration }
+                                value     = { duracion }
+                                onChange  = { ( e ) => setDuracion( Number( e.target.value ) ) }
+                                style     = { backgroundStyle }
+                                className = "h-1.5 w-full cursor-pointer appearance-none rounded-lg border border-border outline-hidden [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-primary [&::-webkit-slider-thumb]:bg-background [&::-webkit-slider-thumb]:shadow-md"
+                            />
+
+                            <div className="flex justify-between text-xs text-muted-foreground mt-1.5 px-0.5 select-none font-medium">
+                                <span>1s</span>
+                                <span className="font-semibold text-primary">{ duracion }s</span>
+                                <span>{ maxDuration }s</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
 				{ /* Botones de acción al fondo en modo creación */ }
 				{ isCreate && (
@@ -358,4 +371,3 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 		</form>
 	);
 }
-
