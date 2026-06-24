@@ -50,7 +50,6 @@ export default async function connectRequest<T>({
         }
     });
 
-
     if ( !response.ok ) {
         const errorData = await response.json().catch( () => ({}) );
 
