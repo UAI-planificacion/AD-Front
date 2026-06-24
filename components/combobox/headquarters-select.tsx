@@ -105,7 +105,7 @@ export function HeadquartersSelect( {
 	maxDisplayItems = 1,
 } : Props ): JSX.Element {
 	return (
-		<div className = { `space-y-2 ${ className }` }>
+		<div className = { `flex flex-col gap-2 ${ className }` }>
 			{ label && <Label htmlFor = "headquarters">{ label }</Label> }
 
 			<MultiSelectCombobox
