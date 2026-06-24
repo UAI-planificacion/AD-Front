@@ -57,7 +57,13 @@ export interface CreateAdDto {
 }
 
 export interface UpdateAdDto {
-    edificios : number[];
+	nombre?			: string;
+	fecha_inicio?	: string;
+	fecha_fin?		: string;
+	hora_inicio?	: string;
+	hora_fin?		: string;
+	duracion?		: number;
+	edificios?		: number[];
 }
 
 
