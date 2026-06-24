@@ -20,8 +20,9 @@ const envSchema = z.object({
     BETTER_AUTH_URL    : z.string().url( { message: 'Better-Auth URL must be a valid URL' }),
 
     // Reservas external API (server-side only)
-    RESERVAS_API_URL : z.string().url( { message: 'Reservas API URL must be a valid URL' }),
-    RESERVAS_API_KEY : z.string().min( 1, { message: 'Reservas API Key is required' }),
+    RESERVAS_API_URL    : z.url( { message: 'Reservas API URL must be a valid URL' }),
+    RESERVAS_API_KEY    : z.string().min( 1, { message: 'Reservas API Key is required' }),
+    RESERVAS_UPLOAD     : z.url().min(10, { message: 'Reservas Upload is required' })
 });
 
 /**
@@ -38,6 +39,7 @@ const processEnv = {
     BETTER_AUTH_URL                 : process.env.BETTER_AUTH_URL,
     RESERVAS_API_URL                : process.env.RESERVAS_API_URL,
     RESERVAS_API_KEY                : process.env.RESERVAS_API_KEY,
+    RESERVAS_UPLOAD                 : process.env.RESERVAS_UPLOAD,
 };
 
 /**
@@ -75,6 +77,6 @@ export const ENV = {
     RESERVAS: {
         API_URL : parsedEnv.data.RESERVAS_API_URL,
         API_KEY : parsedEnv.data.RESERVAS_API_KEY,
+        UPLOAD  : parsedEnv.data.RESERVAS_UPLOAD
     },
 };
-
