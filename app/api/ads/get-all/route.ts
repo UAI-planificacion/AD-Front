@@ -1,10 +1,10 @@
 import { NextResponse }       from 'next/server';
 
-import connectRequest         from '@/lib/services/fetch.service';
-import { METHOD }             from '@/lib/services/http-codes';
-import { ENV }                from '@/config/envs/env';
-import { EXTERNAL_ENDPOINT }  from '@/lib/endpoint';
-import type { Publicidad }    from '@/lib/models/ads';
+import connectRequest           from '@/lib/services/fetch.service';
+import { METHOD }               from '@/lib/services/http-codes';
+import { EXTERNAL_ENDPOINT }    from '@/lib/endpoint';
+import type { Publicidad }      from '@/lib/models/ads';
+import { ENV }                  from '@/config/envs/env';
 
 
 export async function GET(): Promise<NextResponse> {
