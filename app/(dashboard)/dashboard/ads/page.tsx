@@ -1,133 +1,213 @@
 'use client';
 
-import { useState }    from 'react';
-import { useRouter }   from 'next/navigation';
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Suspense, useState }           from 'react';
+import { useRouter, useSearchParams }   from 'next/navigation';
 
-import { useAds }             from '@/hooks/use-ads';
-import { AdsTable }           from './components/ads-table';
-import { AdsDashboardKpis }   from './components/ads-kpi-card';
+import {
+	Plus,
+	Search,
+	Image as ImageIcon,
+	Video,
+	CheckCircle,
+	XCircle,
+	LayoutGrid,
+	Table,
+} from 'lucide-react';
+
+import {
+    ToggleGroup,
+    ToggleGroupItem
+}                               from '@/components/ui/toggle-group';
+import { useAds }               from '@/hooks/use-ads';
+import { AdsTable }             from './components/ads-table';
+import { AdsCardView }          from './components/ads-card-view';
+import { HeadquartersSelect }   from '@/components/combobox/headquarters-select';
 
 
-type FilterActivo = 'all' | 'activa' | 'inactiva';
+function AdsPageContent() : React.JSX.Element {
+	const router        = useRouter();
+	const searchParams  = useSearchParams();
+	const viewParam     = searchParams.get( 'view' );
+	const viewMode      = viewParam === 'card' ? 'card' : 'table';
 
-const FILTER_TABS: Array<{ key: FilterActivo; label: string }> = [
-    { key: 'all',      label: 'Todas' },
-    { key: 'activa',   label: 'Activas' },
-    { key: 'inactiva', label: 'Inactivas / Históricas' },
-];
+	const { data : ads, isLoading, isError }    = useAds();
+	const [ search, setSearch ]                 = useState( '' );
+
+	// Filter states as string arrays matching ToggleGroup's props
+	const [ filterTipo, setFilterTipo ]             = useState<string[]>( [] );
+	const [ filterEstado, setFilterEstado ]         = useState<string[]>( [] );
+	const [ filterEdificios, setFilterEdificios ]   = useState<string[]>( [] );
+
+	function handleEdificiosChange( selected : string[] | string | undefined ) : void {
+		if ( !selected ) {
+			setFilterEdificios( [] );
+		} else if ( Array.isArray( selected ) ) {
+			setFilterEdificios( selected );
+		} else {
+			setFilterEdificios( [ selected ] );
+		}
+	}
+
+	return (
+		<div className="flex min-h-[calc(100vh-4rem)] flex-col gap-6 p-6 bg-background text-foreground max-w-[100rem] mx-auto">
+			{ /* ── Header ── */ }
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<h1 className="text-3xl font-bold tracking-tight">Publicidades</h1>
+					<p className="text-sm text-muted-foreground mt-1">
+						Gestiona todas tus publicidades activas e inactivas
+					</p>
+				</div>
+
+				<div className="flex items-center gap-3">
+					{ /* Card vs Table View Switcher */ }
+					<div className="flex items-center rounded-xl border border-border p-1 bg-muted/20">
+						<button
+							onClick   = { () => router.push( '/dashboard/ads?view=table' ) }
+							className = { `p-1.5 rounded-lg transition-colors cursor-pointer ${
+								viewMode === 'table'
+									? 'bg-background text-foreground shadow-2xs'
+									: 'text-muted-foreground hover:text-foreground'
+							}` }
+							title     = "Vista de tabla"
+						>
+							<Table className="size-4" />
+						</button>
+
+						<button
+							onClick   = { () => router.push( '/dashboard/ads?view=card' ) }
+							className = { `p-1.5 rounded-lg transition-colors cursor-pointer ${
+								viewMode === 'card'
+									? 'bg-background text-foreground shadow-2xs'
+									: 'text-muted-foreground hover:text-foreground'
+							}` }
+							title     = "Vista de tarjetas"
+						>
+							<LayoutGrid className="size-4" />
+						</button>
+					</div>
+
+					<button
+						id        = "ads-create"
+						onClick   = { () => router.push( '/dashboard/ads/form' ) }
+						className = "flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 cursor-pointer"
+					>
+						<Plus className="size-4" /> Nueva Publicidad
+					</button>
+				</div>
+			</div>
+
+			{ /* ── Filters Row ── */ }
+			<div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+				{ /* Search Input */ }
+				<div className="relative w-full sm:w-72">
+					<Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+
+					<input
+						id          = "ads-search"
+						type        = "text"
+						value       = { search }
+						onChange    = { ( e ) => setSearch( e.target.value ) }
+						placeholder = "Buscar publicidades..."
+						className   = "w-full rounded-xl border border-border bg-input py-2.5 pl-9 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+					/>
+				</div>
+
+				{ /* Toggle Group for Tipo */ }
+				<ToggleGroup
+					value         = { filterTipo }
+					onValueChange = { setFilterTipo }
+					className     = "flex items-center gap-1 rounded-xl border border-border p-1 bg-muted/20 shrink-0"
+				>
+					<ToggleGroupItem value="imagen" className="px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer">
+						<ImageIcon className="size-3.5" />
+						Imagen
+					</ToggleGroupItem>
+
+					<ToggleGroupItem value="video" className="px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer">
+						<Video className="size-3.5" />
+						Video
+					</ToggleGroupItem>
+				</ToggleGroup>
+
+				{ /* Toggle Group for Estado */ }
+				<ToggleGroup
+					value         = { filterEstado }
+					onValueChange = { setFilterEstado }
+					className     = "flex items-center gap-1 rounded-xl border border-border p-1 bg-muted/20 shrink-0"
+				>
+					<ToggleGroupItem value="activa" className="px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer">
+						<CheckCircle className="size-3.5" />
+						Activa
+					</ToggleGroupItem>
+
+					<ToggleGroupItem value="inactiva" className="px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer">
+						<XCircle className="size-3.5" />
+						Inactiva
+					</ToggleGroupItem>
+				</ToggleGroup>
+
+				{ /* HeadquartersSelect for Edificios */ }
+				<div className="w-full sm:w-64">
+					<HeadquartersSelect
+						defaultValues     = { filterEdificios }
+						onSelectionChange = { handleEdificiosChange }
+						placeholder       = "Todos los edificios"
+						multiple          = { true }
+						maxDisplayItems   = { 2 }
+					/>
+				</div>
+			</div>
+
+			{ /* ── Content ── */ }
+			{ isLoading && (
+				<div className="flex flex-col gap-3">
+					{ Array.from( { length : 6 } ).map( ( _, i ) => (
+						<div key = { i } className="h-14 animate-pulse rounded-xl bg-muted" />
+					) ) }
+				</div>
+			) }
+
+			{ isError && (
+				<div className="flex flex-col items-center justify-center gap-2 py-20 text-center text-destructive">
+					<p className="text-sm font-semibold">Error al cargar las publicidades</p>
+					<p className="text-xs text-muted-foreground">Por favor, intenta de nuevo más tarde.</p>
+				</div>
+			) }
+
+			{ !isLoading && !isError && ads && (
+				viewMode === 'card' ? (
+					<AdsCardView
+						ads             = { ads }
+						filterText      = { search }
+						filterTipo      = { filterTipo }
+						filterEstado    = { filterEstado }
+						filterEdificios = { filterEdificios }
+					/>
+				) : (
+					<AdsTable
+						ads             = { ads }
+						filterText      = { search }
+						filterTipo      = { filterTipo }
+						filterEstado    = { filterEstado }
+						filterEdificios = { filterEdificios }
+					/>
+				)
+			) }
+		</div>
+	);
+}
 
 
-export default function AdsPage(): React.JSX.Element {
-    const router  = useRouter();
-    const { data: ads, isLoading, isError, refetch, isFetching } = useAds();
-
-    const [ search, setSearch ]             = useState( '' );
-    const [ filterActivo, setFilterActivo ] = useState<FilterActivo>( 'all' );
-
-    return (
-        <div className="flex min-h-[calc(100vh-4rem)] flex-col gap-8 p-6">
-
-            { /* ── Header ── */ }
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-foreground">
-                        📺 Gestión de Publicidades
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Administra las publicidades que se muestran en las pantallas de los campus UAI
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        id        = "ads-refresh"
-                        onClick   = { () => refetch() }
-                        disabled  = { isFetching }
-                        className = "rounded-xl border border-border p-2.5 text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
-                        aria-label = "Actualizar lista"
-                    >
-                        <RefreshCw className={ `size-4 ${ isFetching ? 'animate-spin' : '' }` } />
-                    </button>
-
-                    <button
-                        id        = "ads-create"
-                        onClick   = { () => router.push( '/dashboard/ads/nueva' ) }
-                        className = "flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90"
-                    >
-                        <Plus className="size-4" /> Nueva publicidad
-                    </button>
-                </div>
-            </div>
-
-            { /* ── KPIs ── */ }
-            { ads && ads.length > 0 && <AdsDashboardKpis ads = { ads } /> }
-
-            { /* ── Filters ── */ }
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                { /* Search */ }
-                <div className="relative max-w-sm flex-1">
-                    <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                        id          = "ads-search"
-                        type        = "text"
-                        value       = { search }
-                        onChange    = { ( e ) => setSearch( e.target.value ) }
-                        placeholder = "Buscar publicidad..."
-                        className   = "w-full rounded-xl border border-border bg-input py-2.5 pl-9 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    />
-                </div>
-
-                { /* Tabs */ }
-                <div className="flex rounded-xl border border-border p-1 bg-muted/30">
-                    { FILTER_TABS.map( ( tab ) => (
-                        <button
-                            key       = { tab.key }
-                            id        = { `ads-filter-${ tab.key }` }
-                            onClick   = { () => setFilterActivo( tab.key ) }
-                            className = { `rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                                filterActivo === tab.key
-                                    ? 'bg-background text-foreground shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
-                            }` }
-                        >
-                            { tab.label }
-                        </button>
-                    )) }
-                </div>
-            </div>
-
-            { /* ── Content ── */ }
-            { isLoading && (
-                <div className="flex flex-col gap-3">
-                    { Array.from({ length: 6 }).map( ( _, i ) => (
-                        <div key = { i } className="h-14 animate-pulse rounded-xl bg-muted" />
-                    )) }
-                </div>
-            ) }
-
-            { isError && (
-                <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-destructive/30 bg-destructive/5 py-16">
-                    <p className="text-sm font-semibold text-destructive">
-                        No se pudo cargar la lista de publicidades
-                    </p>
-                    <button
-                        id        = "ads-retry"
-                        onClick   = { () => refetch() }
-                        className = "rounded-xl border border-destructive/30 px-4 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 transition-colors"
-                    >
-                        Reintentar
-                    </button>
-                </div>
-            ) }
-
-            { !isLoading && !isError && ads && (
-                <AdsTable
-                    ads          = { ads }
-                    filterText   = { search }
-                    filterActivo = { filterActivo }
-                />
-            ) }
-        </div>
-    );
+export default function AdsPage() : React.JSX.Element {
+	return (
+		<Suspense fallback = {
+			<div className="flex min-h-[calc(100vh-4rem)] flex-col gap-6 p-6 bg-background">
+				<div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
+				<div className="mt-6 h-96 animate-pulse rounded-2xl bg-muted" />
+			</div>
+		} >
+			<AdsPageContent />
+		</Suspense>
+	);
 }
