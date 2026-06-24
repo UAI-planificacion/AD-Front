@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-	Plus,
 	MonitorPlay,
 	CheckCircle,
 	Building2,
@@ -11,6 +10,7 @@ import {
 	Eye,
 	X,
 	BookOpen,
+    Ad,
 } from 'lucide-react';
 
 import { useAds }       from '@/hooks/use-ads';
@@ -24,7 +24,7 @@ export default function DashboardPage(): React.JSX.Element {
 
 	if ( isLoading ) {
 		return (
-			<div className="flex min-h-[calc(100vh-4rem)] flex-col gap-8 p-6 bg-background">
+			<div className="flex min-h-[calc(100vh-10rem)] flex-col gap-8 p-6 bg-background">
 				<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
 					<div className="space-y-2">
 						<div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
@@ -45,7 +45,7 @@ export default function DashboardPage(): React.JSX.Element {
 
 	if ( isError || !ads ) {
 		return (
-			<div className="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center gap-4 p-6 bg-background">
+			<div className="flex min-h-[calc(100vh-10rem)] flex-col items-center justify-center gap-4 p-6 bg-background">
 				<p className="text-sm font-semibold text-destructive">
 					No se pudieron cargar los datos del dashboard
 				</p>
@@ -60,7 +60,7 @@ export default function DashboardPage(): React.JSX.Element {
 		.slice( 0, 4 );
 
 	return (
-		<div className="flex min-h-[calc(100vh-4rem)] flex-col gap-8 p-6 bg-background text-foreground">
+		<div className="flex min-h-[calc(100vh-10rem)] flex-col gap-8 p-6 bg-background text-foreground max-w-7xl mx-auto">
 			{ /* ── Header ── */ }
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
@@ -73,15 +73,15 @@ export default function DashboardPage(): React.JSX.Element {
 
 				<button
 					id        = "dashboard-create-ad"
-					onClick   = { () => router.push( '/dashboard/ads/nueva' ) }
+					onClick   = { () => router.push( '/dashboard/ads' ) }
 					className = "flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 cursor-pointer"
 				>
-					<Plus className="size-4" /> Nueva Publicidad
+					<Ad className="size-4" />Publicidades
 				</button>
 			</div>
 
 			{ /* ── KPI Grid ── */ }
-			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				{ /* Card 1: Total */ }
 				<div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between h-36">
 					<div className="flex items-center justify-between text-muted-foreground">
