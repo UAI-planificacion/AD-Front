@@ -39,20 +39,25 @@ export function useAds(): UseQueryResult<Publicidad[], Error> {
 
 // ─── Mutations ───────────────────────────────────────────────────────────────
 
-export function useCreateAd(): UseMutationResult<Publicidad, Error, CreateAdDto> {
-    const queryClient = useQueryClient();
+export function useCreateAd() : UseMutationResult<Publicidad, Error, FormData> {
+	const queryClient = useQueryClient();
 
-    return useMutation({
-        mutationFn : ( dto: CreateAdDto ) => connectRequest<Publicidad>({
-            endpoint   : INTERNAL_ENDPOINT.ADS.CREATE,
-            method     : METHOD.POST,
-            isInternal : true,
-            body       : dto,
-        }),
-        onSuccess : () => {
-            queryClient.invalidateQueries({ queryKey: ADS_QUERY_KEY });
-        },
-    });
+	return useMutation( {
+		mutationFn : async ( formData : FormData ) => {
+			const response = await fetch( '/api/ads/create', {
+				method : 'POST',
+				body   : formData,
+			} );
+			if ( !response.ok ) {
+				const err = await response.json().catch( ( ) => ( { } ) );
+				throw new Error( err.message || 'Error al crear la publicidad' );
+			}
+			return response.json() as Promise<Publicidad>;
+		},
+		onSuccess : ( ) => {
+			queryClient.invalidateQueries( { queryKey : ADS_QUERY_KEY } );
+		},
+	} );
 }
 
 
