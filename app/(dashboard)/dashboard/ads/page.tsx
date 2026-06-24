@@ -12,6 +12,9 @@ import {
 	XCircle,
 	LayoutGrid,
 	Table,
+	Images,
+    Ad,
+    ChevronLeft,
 } from 'lucide-react';
 
 import {
@@ -22,6 +25,7 @@ import { useAds }               from '@/hooks/use-ads';
 import { AdsTable }             from './components/ads-table';
 import { AdsCardView }          from './components/ads-card-view';
 import { HeadquartersSelect }   from '@/components/combobox/headquarters-select';
+import { Button }               from '@/components/ui/button';
 
 
 function AdsPageContent() : React.JSX.Element {
@@ -30,13 +34,15 @@ function AdsPageContent() : React.JSX.Element {
 	const viewParam     = searchParams.get( 'view' );
 	const viewMode      = viewParam === 'card' ? 'card' : 'table';
 
-	const { data : ads, isLoading, isError }    = useAds();
-	const [ search, setSearch ]                 = useState( '' );
+	const [ search, setSearch ] = useState( '' );
 
 	// Filter states as string arrays matching ToggleGroup's props
 	const [ filterTipo, setFilterTipo ]             = useState<string[]>( [] );
 	const [ filterEstado, setFilterEstado ]         = useState<string[]>( [] );
 	const [ filterEdificios, setFilterEdificios ]   = useState<string[]>( [] );
+
+	const isVigent                              = filterEstado[ 0 ] === 'vigentes';
+	const { data : ads, isLoading, isError }    = useAds( isVigent );
 
 	function handleEdificiosChange( selected : string[] | string | undefined ) : void {
 		if ( !selected ) {
@@ -49,11 +55,26 @@ function AdsPageContent() : React.JSX.Element {
 	}
 
 	return (
-		<div className="flex min-h-[calc(100vh-4rem)] flex-col gap-6 p-6 bg-background text-foreground max-w-[100rem] mx-auto">
+		<div className="flex min-h-[calc(100vh-10rem)] flex-col gap-6 p-6 bg-background text-foreground max-w-7xl mx-auto">
 			{ /* ── Header ── */ }
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Publicidades</h1>
+                    <div className='flex items-center gap-2'>
+                        <Button
+                            id        = "dashboard-back-button"
+                            onClick   = { () => router.push( '/dashboard' ) }
+                            variant   = "outline"
+                            size      = "icon"
+                        >
+                            <ChevronLeft className="size-6" />
+                        </Button>
+
+                        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+                            <Ad className="size-8" />
+                            Publicidades
+                        </h1>
+                    </div>
+
 					<p className="text-sm text-muted-foreground mt-1">
 						Gestiona todas tus publicidades activas e inactivas
 					</p>
@@ -105,11 +126,11 @@ function AdsPageContent() : React.JSX.Element {
 
 					<input
 						id          = "ads-search"
-						type        = "text"
+						type        = "search"
 						value       = { search }
 						onChange    = { ( e ) => setSearch( e.target.value ) }
 						placeholder = "Buscar publicidades..."
-						className   = "w-full rounded-xl border border-border bg-input py-2.5 pl-9 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+						className   = "w-full rounded-xl border border-border py-2.5 pl-9 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
 					/>
 				</div>
 
@@ -145,28 +166,24 @@ function AdsPageContent() : React.JSX.Element {
 						<XCircle className="size-3.5" />
 						Inactiva
 					</ToggleGroupItem>
+
+					<ToggleGroupItem value="vigentes" className="px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer">
+						<Images className="size-3.5" />
+						Vigentes
+					</ToggleGroupItem>
 				</ToggleGroup>
 
 				{ /* HeadquartersSelect for Edificios */ }
-				<div className="w-full sm:w-64">
+				<div className="w-full xl:w-115">
 					<HeadquartersSelect
 						defaultValues     = { filterEdificios }
 						onSelectionChange = { handleEdificiosChange }
 						placeholder       = "Todos los edificios"
 						multiple          = { true }
-						maxDisplayItems   = { 2 }
+						maxDisplayItems   = { 4 }
 					/>
 				</div>
 			</div>
-
-			{ /* ── Content ── */ }
-			{ isLoading && (
-				<div className="flex flex-col gap-3">
-					{ Array.from( { length : 6 } ).map( ( _, i ) => (
-						<div key = { i } className="h-14 animate-pulse rounded-xl bg-muted" />
-					) ) }
-				</div>
-			) }
 
 			{ isError && (
 				<div className="flex flex-col items-center justify-center gap-2 py-20 text-center text-destructive">
@@ -175,10 +192,11 @@ function AdsPageContent() : React.JSX.Element {
 				</div>
 			) }
 
-			{ !isLoading && !isError && ads && (
+			{ !isError && (
 				viewMode === 'card' ? (
 					<AdsCardView
-						ads             = { ads }
+						ads             = { ads ?? [] }
+						isLoading       = { isLoading }
 						filterText      = { search }
 						filterTipo      = { filterTipo }
 						filterEstado    = { filterEstado }
@@ -186,7 +204,8 @@ function AdsPageContent() : React.JSX.Element {
 					/>
 				) : (
 					<AdsTable
-						ads             = { ads }
+						ads             = { ads ?? [] }
+						isLoading       = { isLoading }
 						filterText      = { search }
 						filterTipo      = { filterTipo }
 						filterEstado    = { filterEstado }
