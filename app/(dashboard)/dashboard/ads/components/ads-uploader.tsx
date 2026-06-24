@@ -1,93 +1,182 @@
 'use client';
 
 import { useCallback, useState, useEffect } from 'react';
-import { useDropzone }                       from 'react-dropzone';
-import { Upload, X, Film, Image as ImageIcon } from 'lucide-react';
-import { cn }                                from '@/lib/utils';
+
+import {
+    Upload,
+    X,
+    Film,
+    Image as ImageIcon
+}                       from 'lucide-react';
+import { useDropzone }  from 'react-dropzone';
+import { toast }        from 'sonner';
+
+import { cn } from '@/lib/utils';
 
 
 interface AdsUploaderProps {
-	value?    : File | null;
-	onChange  : ( file: File | null ) => void;
-	disabled? : boolean;
+	value?            : File | null;
+	onChange          : ( file : File | null ) => void;
+	disabled?         : boolean;
+	onDurationDetect? : ( duration : number ) => void;
 }
 
 
 const ACCEPTED_TYPES = {
 	'image/png'  : [ '.png' ],
 	'image/jpeg' : [ '.jpg', '.jpeg' ],
-	'image/webp' : [ '.webp' ],
 	'video/mp4'  : [ '.mp4' ],
 	'video/webm' : [ '.webm' ],
 };
 
 
-function formatBytes( bytes: number ): string {
+function formatBytes( bytes : number ) : string {
 	if ( bytes === 0 ) return '0 B';
-	const k     = 1024;
+
+    const k     = 1024;
 	const sizes = [ 'B', 'KB', 'MB', 'GB' ];
-	const i     = Math.floor( Math.log( bytes ) / Math.log( k ) );
-	return `${ parseFloat( ( bytes / Math.pow( k, i ) ).toFixed( 1 ) ) } ${ sizes[ i ] }`;
+	const i     = Math.floor( Math.log( bytes ) / Math.log( k ));
+
+    return `${ parseFloat( ( bytes / Math.pow( k, i ) ).toFixed( 1 ) ) } ${ sizes[ i ] }`;
 }
 
 
-export function AdsUploader( { value, onChange, disabled = false }: AdsUploaderProps ): React.JSX.Element {
-	const [ imagePreview, setImagePreview ] = useState<string | null>( null );
-	const [ videoUrl, setVideoUrl ]         = useState<string | null>( null );
+export function AdsUploader( {
+	value,
+	onChange,
+	disabled = false,
+	onDurationDetect,
+} : AdsUploaderProps ) : React.JSX.Element {
+	const [ imagePreview, setImagePreview ]         = useState<string | null>( null );
+	const [ videoUrl, setVideoUrl ]                 = useState<string | null>( null );
+	const [ detectedDuration, setDetectedDuration ] = useState<number | null>( null );
 
 	// Revocar el object URL del video al desmontar o cambiar
-	useEffect( () => {
-		return () => {
+	useEffect( ( ) => {
+		return ( ) => {
 			if ( videoUrl ) URL.revokeObjectURL( videoUrl );
 		};
-	}, [ videoUrl ] );
+	}, [ videoUrl ]);
 
 
-	const onDrop = useCallback( ( acceptedFiles: File[] ) => {
+	const onDropRejected = useCallback( ( ) => {
+		toast.error( 'Formato de archivo no válido. Solo JPG, PNG, MP4 o WebM.' );
+	}, [ ] );
+
+
+	const onDrop = useCallback( ( acceptedFiles : File[] ) => {
 		const file = acceptedFiles[ 0 ];
 		if ( !file ) return;
 
-		onChange( file );
-
 		if ( file.type.startsWith( 'image/' ) ) {
-			// Limpiar video anterior
-			if ( videoUrl ) {
-				URL.revokeObjectURL( videoUrl );
-				setVideoUrl( null );
-			}
-			const reader  = new FileReader();
-			reader.onload = ( e ) => setImagePreview( e.target?.result as string );
+			const reader  = new FileReader( );
+			reader.onload = ( e ) => {
+				const src = e.target?.result as string;
+				const img = new Image( );
+				img.onload = ( ) => {
+					// 1. Min resolution: 1080x1920
+					// if ( img.width < 1080 || img.height < 1920 ) {
+					// 	toast.error( 'La resolución mínima debe ser 1080x1920px' );
+					// 	onChange( null );
+					// 	setImagePreview( null );
+					// 	return;
+					// }
+
+					// 2. Aspect Ratio: 9:16
+					// const ratio = img.width / img.height;
+					// if ( Math.abs( ratio - ( 9 / 16 ) ) > 0.02 ) {
+					// 	toast.error( 'La relación de aspecto debe ser 9:16 (vertical)' );
+					// 	onChange( null );
+					// 	setImagePreview( null );
+					// 	return;
+					// }
+
+					// Si todo es válido
+					if ( videoUrl ) {
+						URL.revokeObjectURL( videoUrl );
+						setVideoUrl( null );
+					}
+					setDetectedDuration( null );
+					setImagePreview( src );
+					onChange( file );
+				};
+				img.src = src;
+			};
 			reader.readAsDataURL( file );
 		} else if ( file.type.startsWith( 'video/' ) ) {
-			// Limpiar imagen anterior
-			setImagePreview( null );
-			if ( videoUrl ) URL.revokeObjectURL( videoUrl );
-			setVideoUrl( URL.createObjectURL( file ) );
+			const url = URL.createObjectURL( file );
+			const tempVideo            = document.createElement( 'video' );
+			tempVideo.preload          = 'metadata';
+			tempVideo.onloadedmetadata = ( ) => {
+				const width    = tempVideo.videoWidth;
+				const height   = tempVideo.videoHeight;
+				const duration = tempVideo.duration;
+
+				// 1. Duración máxima: 60s
+				if ( duration > 60 ) {
+					toast.error( 'La duración máxima del video es de 60 segundos' );
+					onChange( null );
+					setImagePreview( null );
+					URL.revokeObjectURL( url );
+					return;
+				}
+
+				// 2. Min resolution: 1080x1920
+				// if ( width < 1080 || height < 1920 ) {
+				// 	toast.error( 'La resolución mínima debe ser 1080x1920 px' );
+				// 	onChange( null );
+				// 	setImagePreview( null );
+				// 	URL.revokeObjectURL( url );
+				// 	return;
+				// }
+
+				// // 3. Aspect Ratio: 9:16
+				// const ratio = width / height;
+				// if ( Math.abs( ratio - ( 9 / 16 ) ) > 0.02 ) {
+				// 	toast.error( 'La relación de aspecto debe ser 9:16 (vertical)' );
+				// 	onChange( null );
+				// 	setImagePreview( null );
+				// 	URL.revokeObjectURL( url );
+				// 	return;
+				// }
+
+				// Si todo es válido
+				setImagePreview( null );
+				if ( videoUrl ) URL.revokeObjectURL( videoUrl );
+				setVideoUrl( url );
+				setDetectedDuration( Math.round( duration ) );
+				onDurationDetect?.( duration );
+				onChange( file );
+			};
+			tempVideo.src = url;
 		}
-	}, [ onChange, videoUrl ] );
+	}, [ onChange, videoUrl, onDurationDetect ] );
 
 
-	const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
+	const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone( {
 		onDrop,
+		onDropRejected,
 		accept   : ACCEPTED_TYPES,
 		maxFiles : 1,
 		disabled,
-	});
+	} );
 
 	const isVideo  = value?.type.startsWith( 'video/' );
 	const isImage  = value?.type.startsWith( 'image/' );
 	const hasError = fileRejections.length > 0;
 
 
-	function handleClear( e: React.MouseEvent ): void {
-		e.stopPropagation();
+	function handleClear( e : React.MouseEvent ) : void {
+		e.stopPropagation( );
 		onChange( null );
 		setImagePreview( null );
+		setDetectedDuration( null );
 		if ( videoUrl ) {
 			URL.revokeObjectURL( videoUrl );
 			setVideoUrl( null );
 		}
 	}
+
 
 
 	return (
@@ -111,10 +200,18 @@ export function AdsUploader( { value, onChange, disabled = false }: AdsUploaderP
 						{ /* Badge de tipo */ }
 						<div className="flex items-center justify-between">
 							{ isVideo ? (
-								<span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/15 px-2.5 py-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400">
-									<Film className="size-3" />
-									Tipo: Video
-								</span>
+								<div className = "flex items-center gap-2">
+									<span className = "inline-flex items-center gap-1.5 rounded-full bg-violet-500/15 px-2.5 py-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400">
+										<Film className = "size-3" />
+										Tipo: Video
+									</span>
+
+									{ detectedDuration !== null && (
+										<span className = "inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+											Duración: { detectedDuration }s
+										</span>
+									) }
+								</div>
 							) : (
 								<span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/15 px-2.5 py-1 text-[11px] font-semibold text-sky-600 dark:text-sky-400">
 									<ImageIcon className="size-3" />
