@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
-import { useRouter }                from 'next/navigation';
+import { useState, useEffect, type FormEvent } from 'react';
+import { useRouter }                          from 'next/navigation';
 
 import { toast }        from 'sonner';
 import { CalendarDays } from 'lucide-react';
 
 import type {
-    CreateAdDto,
     Publicidad,
     UpdateAdDto
 }                                   from '@/lib/models/ads';
@@ -17,15 +16,27 @@ import { DateRangePicker }          from '@/components/ui/date-range-picker';
 import { TimeRangePicker }          from '@/components/ui/time-range-picker';
 import { HeadquartersSelect }       from '@/components/combobox/headquarters-select';
 import { cn }                       from '@/lib/utils';
+import { Label }                    from '@/components/ui/label';
+import { getCampusesForBuildings }  from '../utils/ads-helpers';
+
+
+function areArraysEqual( a : number[], b : number[] ) : boolean {
+	if ( a.length !== b.length ) return false;
+	const sortedA = [ ...a ].sort( );
+	const sortedB = [ ...b ].sort( );
+	return sortedA.every( ( val, i ) => val === sortedB[ i ] );
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 interface AdsFormProps {
-    mode        : 'create' | 'edit';
-    initialData?: Publicidad;
+	mode             : 'create' | 'edit';
+	initialData?     : Publicidad;
+	onDirtyChange?   : ( isDirty : boolean ) => void;
+	onPendingChange? : ( isPending : boolean ) => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
-export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Element {
+export function AdsForm( { mode, initialData, onDirtyChange, onPendingChange }: AdsFormProps ): React.JSX.Element {
 	const router      = useRouter( );
 	const createMutation = useCreateAd( );
 	const updateMutation = useUpdateAd( );
@@ -41,11 +52,72 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 	const [ edificios, setEdificios ]     = useState<number[]>( initialData?.edificios ?? [] );
 	const [ archivoUrl, setArchivoUrl ]   = useState( initialData?.archivo_url   ?? '' );
 	const [ file, setFile ]               = useState<File | null>( null );
+	const [ activo, setActivo ]           = useState( initialData?.activo        ?? true );
 
 	// Error state
 	const [ errors, setErrors ] = useState<Partial<Record<string, string>>>( { } );
 
 	const isPending = createMutation.isPending || updateMutation.isPending;
+
+	useEffect( ( ) => {
+		if ( onPendingChange ) {
+			onPendingChange( isPending );
+		}
+	}, [ isPending, onPendingChange ] );
+
+	useEffect( ( ) => {
+		if ( mode === 'edit' && initialData && !initialData.activo ) {
+			if ( fechaInicio !== initialData.fecha_inicio || fechaFin !== initialData.fecha_fin ) {
+				setActivo( true );
+			}
+		}
+	}, [ fechaInicio, fechaFin, initialData, mode ] );
+
+	useEffect( ( ) => {
+		if ( !onDirtyChange ) return;
+
+		let dirty = false;
+		if ( mode === 'create' ) {
+			dirty =
+				nombre !== '' ||
+				tipo !== 'imagen' ||
+				duracion !== 10 ||
+				fechaInicio !== '' ||
+				fechaFin !== '' ||
+				horaInicio !== '08:00:00' ||
+				horaFin !== '23:59:00' ||
+				edificios.length > 0 ||
+				file !== null;
+		} else {
+			dirty =
+				nombre !== ( initialData?.nombre ?? '' ) ||
+				tipo !== ( initialData?.tipo ?? 'imagen' ) ||
+				duracion !== ( initialData?.duracion ?? 10 ) ||
+				fechaInicio !== ( initialData?.fecha_inicio ?? '' ) ||
+				fechaFin !== ( initialData?.fecha_fin ?? '' ) ||
+				horaInicio !== ( initialData?.hora_inicio ?? '08:00:00' ) ||
+				horaFin !== ( initialData?.hora_fin ?? '23:59:00' ) ||
+				!areArraysEqual( edificios, initialData?.edificios ?? [] ) ||
+				activo !== ( initialData?.activo ?? true ) ||
+				file !== null;
+		}
+
+		onDirtyChange( dirty );
+	}, [
+		nombre,
+		tipo,
+		duracion,
+		fechaInicio,
+		fechaFin,
+		horaInicio,
+		horaFin,
+		edificios,
+		activo,
+		file,
+		initialData,
+		mode,
+		onDirtyChange,
+	] );
 
 
 	function handleEdificiosChange( selected : string[] | string | undefined ) : void {
@@ -74,11 +146,30 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 
 	function validate( ): boolean {
 		const newErrors: Partial<Record<string, string>> = { };
+		const today = new Date( );
+		today.setHours( 0, 0, 0, 0 );
 
 		if ( !nombre.trim( ) )       newErrors.nombre       = 'El nombre es obligatorio';
-		if ( !fechaInicio )         newErrors.fechaInicio   = 'La fecha de inicio es obligatoria';
-		if ( !fechaFin )            newErrors.fechaFin      = 'La fecha de fin es obligatoria';
-		if ( edificios.length === 0 ) newErrors.edificios   = 'Selecciona al menos un edificio';
+
+		if ( !fechaInicio ) {
+			newErrors.fechaInicio   = 'La fecha de inicio es obligatoria';
+		} else if ( mode === 'create' ) {
+			const start = new Date( `${ fechaInicio }T00:00:00` );
+			if ( start < today ) {
+				newErrors.fechaInicio = 'La fecha de inicio no puede ser anterior al día de hoy';
+			}
+		}
+
+		if ( !fechaFin ) {
+			newErrors.fechaFin      = 'La fecha de fin es obligatoria';
+		} else if ( mode === 'create' ) {
+			const end = new Date( `${ fechaFin }T00:00:00` );
+			if ( end < today ) {
+				newErrors.fechaFin = 'La fecha de fin no puede ser anterior al día de hoy';
+			}
+		}
+
+		if ( edificios.length === 0 ) newErrors.edificios   = 'Selecciona al menos una sede';
 		if ( mode === 'create' && !file && !archivoUrl )
 			newErrors.archivo = 'Debes subir un archivo';
 
@@ -101,6 +192,7 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 					hora_fin		: horaFin.substring( 0, 5 ),
 					duracion		: Number( duracion ),
 					edificios		: edificios,
+					activo			: activo,
 				};
 				await updateMutation.mutateAsync( { id : initialData.id, dto } );
 				toast.success( 'Publicidad actualizada correctamente' );
@@ -140,14 +232,14 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 
 
 	return (
-		<form id="ads-form" onSubmit = { handleSubmit } className = { isCreate ? "max-w-3xl mx-auto w-full flex flex-col gap-6" : "grid gap-8 lg:grid-cols-[1fr_380px]" }>
+		<form id="ads-form" onSubmit = { handleSubmit } className = { isCreate ? "max-w-7xl mx-auto w-full flex flex-col gap-6" : "grid gap-8 lg:grid-cols-[1fr_380px]" }>
 			{ /* ── LEFT: Fields ── */ }
 			<div className = { cn( "flex flex-col gap-6", isCreate ? "w-full" : "" ) }>
 				{ /* Nombre */ }
 				<div className="flex flex-col gap-1.5">
-					<label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" htmlFor="ads-nombre">
+					<Label htmlFor="ads-nombre">
 						Nombre de la publicidad
-					</label>
+					</Label>
 
 					<input
 						id          = "ads-nombre"
@@ -169,9 +261,9 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 items-center'>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1.5 col-span-2">
-                                <label className="text-xs font-medium text-muted-foreground">
+                                <Label>
                                     Rango de fechas
-                                </label>
+                                </Label>
 
                                 <DateRangePicker
                                     value    = { { from: fechaInicio, to: fechaFin } }
@@ -190,9 +282,9 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1.5 col-span-2">
-                                <label className="text-xs font-medium text-muted-foreground">
+                                <Label>
                                     Horario de vigencia
-                                </label>
+                                </Label>
 
                                 <TimeRangePicker
                                     startTime = { horaInicio }
@@ -212,8 +304,8 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 					<HeadquartersSelect
 						defaultValues     = { edificios.map( String ) }
 						onSelectionChange = { handleEdificiosChange }
-						label             = "Edificios donde se mostrará"
-						maxDisplayItems   = { 2 }
+						label             = "Sedes donde se mostrará"
+						maxDisplayItems   = { 5 }
 					/>
 					{ errors.edificios && <p className="text-xs text-destructive">{ errors.edificios }</p> }
 				</div>
@@ -221,9 +313,9 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
                 { /* Archivo — solo en create */ }
 				{ mode === 'create' && (
 					<div className="flex flex-col gap-1.5">
-						<label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <Label>
 							Archivo de la publicidad
-						</label>
+						</Label>
 
 						<AdsUploader
 							value            = { file }
@@ -262,30 +354,6 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
                         </div>
                     </div>
                 )}
-
-				{ /* Botones de acción al fondo en modo creación */ }
-				{ isCreate && (
-					<div className="mt-4 flex flex-col sm:flex-row gap-4">
-						<button
-							id        = "ads-form-submit"
-							type      = "submit"
-							disabled  = { isPending }
-							className = "flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-						>
-							{ isPending ? 'Creando…' : 'Crear publicidad' }
-						</button>
-
-						<button
-							id        = "ads-form-cancel"
-							type      = "button"
-							onClick   = { ( ) => router.back( ) }
-							disabled  = { isPending }
-							className = "rounded-xl border border-border px-8 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50 cursor-pointer"
-						>
-							Cancelar
-						</button>
-					</div>
-				) }
 			</div>
 
 			{ /* ── RIGHT: Preview + Actions (Solo en modo edición) ── */ }
@@ -338,32 +406,25 @@ export function AdsForm( { mode, initialData }: AdsFormProps ): React.JSX.Elemen
 								</div>
 
 								<div className="flex justify-between">
-									<span className="text-muted-foreground">Edificios</span>
+									<span className="text-muted-foreground">Sedes</span>
 
-									<span className="font-medium text-foreground">{ edificios.length }</span>
+									<span className="font-medium text-foreground">{ getCampusesForBuildings( edificios ).length }</span>
+								</div>
+
+								<div className="flex justify-between items-center mt-1 pt-2 border-t border-border/50">
+									<span className="text-muted-foreground font-semibold">Estado</span>
+
+									<span className = { cn(
+										"inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold select-none transition-all duration-300",
+										activo
+											? "bg-black text-white dark:bg-white dark:text-black"
+											: "bg-muted text-muted-foreground"
+									) } >
+										{ activo ? 'Activa' : 'Inactiva' }
+									</span>
 								</div>
 							</div>
 
-							<div className="mt-4 flex flex-col gap-2">
-								<button
-									id        = "ads-form-submit-edit"
-									type      = "submit"
-									disabled  = { isPending }
-									className = "w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
-								>
-									{ isPending ? 'Guardando…' : 'Guardar cambios' }
-								</button>
-
-								<button
-									id        = "ads-form-cancel-edit"
-									type      = "button"
-									onClick   = { ( ) => router.back( ) }
-									disabled  = { isPending }
-									className = "w-full rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50 cursor-pointer"
-								>
-									Cancelar
-								</button>
-							</div>
 						</div>
 					</div>
 				</div>
