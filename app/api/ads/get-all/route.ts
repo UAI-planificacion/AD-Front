@@ -12,7 +12,7 @@ export async function GET( request : Request ) : Promise<NextResponse> {
 		const { searchParams } = new URL( request.url );
 		const isVigent = searchParams.get( 'vigentes' ) === 'true';
 
-		const endpoint = isVigent ? EXTERNAL_ENDPOINT.ADS.VIGENT : EXTERNAL_ENDPOINT.ADS.GET_ALL;
+		const endpoint = isVigent ? EXTERNAL_ENDPOINT.ADS.CURRENT : EXTERNAL_ENDPOINT.ADS.GET_ALL;
 
 		const data = await connectRequest<Publicidad[]>( {
 			endpoint		: `${ ENV.RESERVAS.API_URL }/${ endpoint }`,

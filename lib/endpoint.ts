@@ -1,6 +1,7 @@
 export const EXTERNAL_ENDPOINT = {
 	ADS			: {
 		GET_ALL	: 'publicidad',
+		CURRENT	: 'publicidad/vigentes',
 		CREATE	: 'publicidad',
 		UPLOAD	: 'publicidad/upload',
 		UPDATE	: ( id : number ) => 'publicidad/' + id,
