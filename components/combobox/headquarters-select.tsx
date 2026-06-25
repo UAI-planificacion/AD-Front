@@ -1,95 +1,38 @@
 'use client';
 
-import type { JSX } from 'react';
+import { useMemo, type JSX } from 'react';
 
 import {
 	MultiSelectCombobox,
-	type GroupOption,
+	type Option,
 } from './Combobox';
 import { Label } from '@/components/ui/label';
 import { Props } from './select-props';
 
 
-const HEADQUARTERS_DATA : GroupOption[] = [
+const CAMPUS_BUILDINGS : Record<string, string[]> = {
+	'penalolen'		: [ '1', '2', '3', '4', '5', '6' ],
+	'errazuriz'		: [ '7' ],
+	'vitacura'		: [ '8' ],
+	'vina-del-mar'	: [ '9', '10', '14', '11', '12', '13' ],
+};
+
+const CAMPUS_OPTIONS : Option[] = [
 	{
-		id      : 'penalolen',
-		name    : 'Peñalolén',
-		options : [
-			{
-				value : '1',
-				label : 'Edificio Pregrado A',
-			},
-			{
-				value : '2',
-				label : 'Edificio Pregrado B',
-			},
-			{
-				value : '3',
-				label : 'Edificio Postgrado C',
-			},
-			{
-				value : '4',
-				label : 'Edificio Talleres D',
-			},
-			{
-				value : '5',
-				label : 'Edificio Talleres E',
-			},
-			{
-				value : '6',
-				label : 'Edificio Pregrado F',
-			},
-		],
+		value	: 'penalolen',
+		label	: 'Peñalolén',
 	},
 	{
-		id      : 'errazuriz',
-		name    : 'Errázuriz',
-		options : [
-			{
-				value : '7',
-				label : 'Edificio Errázuriz',
-			},
-		],
+		value	: 'errazuriz',
+		label	: 'Errázuriz',
 	},
 	{
-		id      : 'vitacura',
-		name    : 'Vitacura',
-		options : [
-			{
-				value : '8',
-				label : 'Edificio Vitacura',
-			},
-		],
+		value	: 'vitacura',
+		label	: 'Vitacura',
 	},
 	{
-		id      : 'vina-del-mar',
-		name    : 'Viña del Mar',
-		options : [
-			{
-				value : '9',
-				label : 'Edificio A',
-			},
-			{
-				value : '10',
-				label : 'Edificio B',
-			},
-			{
-				value : '14',
-				label : 'Edificio C',
-			},
-			{
-				value : '11',
-				label : 'Edificio D',
-			},
-			{
-				value : '12',
-				label : 'Edificio E',
-			},
-			{
-				value : '13',
-				label : 'Edificio F',
-			},
-		],
+		value	: 'vina-del-mar',
+		label	: 'Viña del Mar',
 	},
 ];
 
@@ -99,19 +42,56 @@ export function HeadquartersSelect( {
 	onSelectionChange,
 	label,
 	multiple        = true,
-	placeholder     = 'Seleccionar Edificios',
+	placeholder     = 'Seleccionar Sedes',
 	disabled        = false,
 	className       = '',
 	maxDisplayItems = 1,
-} : Props ): JSX.Element {
+} : Props ) : JSX.Element {
+	// Traducir IDs de edificios a IDs de sedes seleccionadas
+	const selectedCampuses = useMemo( ( ) => {
+		const selected = new Set<string>( );
+		const buildings = Array.isArray( defaultValues )
+			? defaultValues
+			: defaultValues
+				? [ defaultValues ]
+				: [];
+
+		Object.entries( CAMPUS_BUILDINGS ).forEach( ( [ campusId, bIds ] ) => {
+			if ( bIds.some( ( id ) => buildings.includes( id ) ) ) {
+				selected.add( campusId );
+			}
+		} );
+		return Array.from( selected );
+	}, [ defaultValues ] );
+
+	// Traducir sedes seleccionadas a todos sus edificios correspondientes
+	function handleSelectionChange( selected : string[] | string | undefined ) : void {
+		if ( !selected ) {
+			onSelectionChange?.( [] );
+			return;
+		}
+
+		const campusIds = Array.isArray( selected ) ? selected : [ selected ];
+		const allBuildingIds : string[] = [];
+
+		campusIds.forEach( ( campusId ) => {
+			const bIds = CAMPUS_BUILDINGS[ campusId ];
+			if ( bIds ) {
+				allBuildingIds.push( ...bIds );
+			}
+		} );
+
+		onSelectionChange?.( allBuildingIds );
+	}
+
 	return (
 		<div className = { `flex flex-col gap-2 ${ className }` }>
 			{ label && <Label htmlFor = "headquarters">{ label }</Label> }
 
 			<MultiSelectCombobox
-				options           = { HEADQUARTERS_DATA }
-				defaultValues     = { defaultValues }
-				onSelectionChange = { onSelectionChange }
+				options           = { CAMPUS_OPTIONS }
+				defaultValues     = { selectedCampuses }
+				onSelectionChange = { handleSelectionChange }
 				placeholder       = { placeholder }
 				disabled          = { disabled }
 				multiple          = { multiple }
