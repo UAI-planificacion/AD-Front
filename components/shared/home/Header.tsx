@@ -12,8 +12,8 @@ export function Header(): React.JSX.Element {
 	const router = useRouter();
 
 	return (
-		<header className="sticky top-0 z-60 w-full">
-			<div className="h-16 border-b bg-background/80 backdrop-blur-md flex items-center justify-between px-3 sm:px-6 shadow-sm border-border/50">
+		<header className="sticky top-0 z-60 w-full border-b bg-background/80 backdrop-blur-md shadow-sm border-border/50">
+			<div className="h-16 flex max-w-7xl mx-auto w-full items-center justify-between px-3 sm:px-6">
 				<div
 					role        = "button"
 					tabIndex    = { 0 }
@@ -22,7 +22,7 @@ export function Header(): React.JSX.Element {
 					onKeyDown   = { ( event ) => { if ( event.key === 'Enter' || event.key === ' ' ) { event.preventDefault(); router.push( '/dashboard' ); } }}
 				>
 					<div className="flex items-center gap-3">
-                        <a href="#">
+                        <a href="/">
                             <span className="sr-only">Universidad Adolfo Ibáñez</span>
 
                             <Image
