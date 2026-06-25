@@ -12,33 +12,27 @@ import connectRequest       from '@/lib/services/fetch.service';
 import { METHOD }           from '@/lib/services/http-codes';
 import { INTERNAL_ENDPOINT } from '@/lib/endpoint';
 import type {
-    CreateAdDto,
     Publicidad,
     UpdateAdDto,
 } from '@/lib/models/ads';
 
 
 // ─── Query Keys ──────────────────────────────────────────────────────────────
-
 export const ADS_QUERY_KEY = [ 'ads' ] as const;
 
-
 // ─── Queries ─────────────────────────────────────────────────────────────────
-
-export function useAds(): UseQueryResult<Publicidad[], Error> {
-    return useQuery({
-        queryKey : ADS_QUERY_KEY,
-        queryFn  : () => connectRequest<Publicidad[]>({
-            endpoint   : INTERNAL_ENDPOINT.ADS.GET_ALL,
-            method     : METHOD.GET,
-            isInternal : true,
-        }),
-    });
+export function useAds( isVigent? : boolean ) : UseQueryResult<Publicidad[], Error> {
+	return useQuery( {
+		queryKey : isVigent ? [ ...ADS_QUERY_KEY, 'vigentes' ] : ADS_QUERY_KEY,
+		queryFn  : ( ) => connectRequest<Publicidad[]>( {
+			endpoint	: isVigent ? `${ INTERNAL_ENDPOINT.ADS.GET_ALL }?vigentes=true` : INTERNAL_ENDPOINT.ADS.GET_ALL,
+			method		: METHOD.GET,
+			isInternal	: true,
+		} ),
+	} );
 }
 
-
 // ─── Mutations ───────────────────────────────────────────────────────────────
-
 export function useCreateAd() : UseMutationResult<Publicidad, Error, FormData> {
 	const queryClient = useQueryClient();
 
