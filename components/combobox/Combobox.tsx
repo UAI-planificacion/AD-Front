@@ -373,7 +373,10 @@ export function MultiSelectCombobox({
                                     {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
                                 </div>
                             )}
-                            <span className="flex-1 truncate pr-2 leading-5" title={item.option.label}>{item.option.label}</span>
+
+                            <span className="flex-1 truncate pr-2 leading-5" title={item.option.label}>
+                                {item.option.label}
+                            </span>
 
                             {!multiple && isSelected && (
                                 <Check className="h-4 w-4 text-primary shrink-0" />
