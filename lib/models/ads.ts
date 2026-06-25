@@ -64,6 +64,7 @@ export interface UpdateAdDto {
 	hora_fin?		: string;
 	duracion?		: number;
 	edificios?		: number[];
+	activo?			: boolean;
 }
 
 
