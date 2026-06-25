@@ -1,18 +1,21 @@
 "use client";
 
 import * as React from 'react';
-import { format }  from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import type { DateRange } from 'react-day-picker';
 
-import { cn }      from '@/lib/utils';
-import { Button }  from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
-	Popover,
+    Calendar as CalendarIcon
+}                           from 'lucide-react';
+import { format }           from 'date-fns';
+import { es }               from 'date-fns/locale';
+import type { DateRange }   from 'react-day-picker';
+
+import {
+    Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover';
+}                   from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn }       from '@/lib/utils';
 
 
 interface DateRangePickerProps {
@@ -25,6 +28,12 @@ interface DateRangePickerProps {
 
 
 export function DateRangePicker( { value, onChange, className, placeholder = 'Seleccionar fechas', disabled = false }: DateRangePickerProps ): React.JSX.Element {
+	const today = React.useMemo( () => {
+		const d = new Date();
+		d.setHours( 0, 0, 0, 0 );
+		return d;
+	}, [] );
+
 	// Parse value to Date objects
 	const [ date, setDate ] = React.useState<DateRange | undefined>( ( ) => {
 		if ( !value ) return undefined;
@@ -76,10 +85,10 @@ export function DateRangePicker( { value, onChange, className, placeholder = 'Se
 					{ date?.from ? (
 						date.to ? (
 							<>
-								{ format( date.from, 'dd/MM/yyyy' ) } - { format( date.to, 'dd/MM/yyyy' ) }
+								{ format( date.from, 'd MMM yyyy', { locale: es } ) } - { format( date.to, 'd MMM yyyy', { locale: es } ) }
 							</>
 						) : (
-							format( date.from, 'dd/MM/yyyy' )
+							format( date.from, 'd MMM yyyy', { locale: es } )
 						)
 					) : (
 						<span>{ placeholder }</span>
@@ -92,9 +101,12 @@ export function DateRangePicker( { value, onChange, className, placeholder = 'Se
 						selected       = { date }
 						onSelect       = { handleSelect }
 						numberOfMonths = { 2 }
+						locale         = { es }
+						disabled       = { { before: today } }
 					/>
 				</PopoverContent>
 			</Popover>
 		</div>
 	);
 }
+
