@@ -4,61 +4,32 @@ import { useState }          from 'react';
 import {
 	Image as ImageIcon,
 	Video,
-}                            from 'lucide-react';
-import { toast }             from 'sonner';
+    Ad
+}                   from 'lucide-react';
+import { toast }    from 'sonner';
 
-import { ConfirmDialog }     from '@/components/shared/ConfirmDialog';
-import { useDeleteAd }       from '@/hooks/use-ads';
-import type { Publicidad }   from '@/lib/models/ads';
-import { AdActionsDropdown } from './ad-actions-dropdown';
+import { 
+	getCampusesForBuildings, 
+	formatDate, 
+	formatTime 
+}                               from '../utils/ads-helpers';
+import { ConfirmDialog }        from '@/components/shared/ConfirmDialog';
+import { useDeleteAd }          from '@/hooks/use-ads';
+import type { Publicidad }      from '@/lib/models/ads';
+import { AdActionsDropdown }    from './ad-actions-dropdown';
 
 
 interface AdsTableProps {
 	ads             : Publicidad[];
+	isLoading?      : boolean;
 	filterText      : string;
 	filterTipo      : string[];
 	filterEstado    : string[];
 	filterEdificios : string[];
 }
 
-const edificioMap: Record<number, string> = {
-	1  : 'Edificio A',
-	2  : 'Edificio B',
-	3  : 'Edificio C',
-	4  : 'Edificio D',
-	5  : 'Edificio E',
-	6  : 'Edificio F',
-	7  : 'Edificio Errázuriz',
-	8  : 'Edificio Vitacura',
-	9  : 'Edificio A',
-	10 : 'Edificio B',
-	11 : 'Edificio D',
-	12 : 'Edificio E',
-	13 : 'Edificio F',
-	14 : 'Edificio C',
-};
 
-
-function formatDate( dateStr: string ): string {
-	if ( !dateStr ) return '';
-	const parts = dateStr.split( '-' );
-	if ( parts.length !== 3 ) return dateStr;
-	const year = parts[ 0 ];
-	const month = parts[ 1 ];
-	const day = parts[ 2 ];
-	return `${ day }/${ month }/${ year }`;
-}
-
-
-function formatTime( timeStr: string ): string {
-	if ( !timeStr ) return '';
-	const parts = timeStr.split( ':' );
-	if ( parts.length < 2 ) return timeStr;
-	return `${ parts[ 0 ] }:${ parts[ 1 ] }`;
-}
-
-
-export function AdsTable( { ads, filterText, filterTipo, filterEstado, filterEdificios } : AdsTableProps ) : React.JSX.Element {
+export function AdsTable( { ads, isLoading = false, filterText, filterTipo, filterEstado, filterEdificios } : AdsTableProps ) : React.JSX.Element {
 	const deleteMutation = useDeleteAd();
 
 	const [ deleteTarget, setDeleteTarget ] = useState<{
@@ -66,12 +37,63 @@ export function AdsTable( { ads, filterText, filterTipo, filterEstado, filterEdi
 		nombre	: string;
 	} | null>( null );
 
+	if ( isLoading ) {
+		return (
+			<div className="overflow-x-auto rounded-xl border border-border bg-card h-[calc(100vh-23rem)]">
+				<table className="w-full text-sm">
+					<thead>
+						<tr className="border-b border-border bg-muted/40">
+							<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Nombre</th>
+							<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Tipo</th>
+							<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Duración</th>
+							<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Vigencia</th>
+							<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Sedes</th>
+							<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Estado</th>
+							<th className="px-4 py-3.5 text-right text-xs font-semibold text-muted-foreground">Acciones</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ Array.from( { length : 6 } ).map( ( _, i ) => (
+							<tr key = { i } className="border-b border-border/50 last:border-0 animate-pulse">
+								<td className="px-4 py-4">
+									<div className="h-4 w-40 rounded bg-muted" />
+								</td>
+								<td className="px-4 py-4">
+									<div className="h-4 w-14 rounded bg-muted" />
+								</td>
+								<td className="px-4 py-4">
+									<div className="h-4 w-8 rounded bg-muted" />
+								</td>
+								<td className="px-4 py-4">
+									<div className="flex flex-col gap-1.5">
+										<div className="h-3 w-28 rounded bg-muted" />
+										<div className="h-2.5 w-16 rounded bg-muted" />
+									</div>
+								</td>
+								<td className="px-4 py-4">
+									<div className="h-6 w-20 rounded-lg bg-muted" />
+								</td>
+								<td className="px-4 py-4">
+									<div className="h-6 w-16 rounded-full bg-muted" />
+								</td>
+								<td className="px-4 py-4 text-right">
+									<div className="inline-block h-8 w-8 rounded-lg bg-muted" />
+								</td>
+							</tr>
+						) ) }
+					</tbody>
+				</table>
+			</div>
+		);
+	}
+
 	const filtered = ads.filter( ( ad ) => {
 		const matchText  = ad.nombre.toLowerCase().includes( filterText.toLowerCase() );
 		const matchTipo  = filterTipo.length === 0 ? true : ad.tipo === filterTipo[ 0 ];
 		const matchState =
-			filterEstado.length === 0      ? true :
-			filterEstado[ 0 ] === 'activa' ? ad.activo :
+			filterEstado.length === 0        ? true :
+			filterEstado[ 0 ] === 'activa'   ? ad.activo :
+			filterEstado[ 0 ] === 'vigentes' ? true :
 			!ad.activo;
 		const matchEdificios = filterEdificios.length === 0
 			? true
@@ -100,7 +122,7 @@ export function AdsTable( { ads, filterText, filterTipo, filterEstado, filterEdi
 	if ( filtered.length === 0 ) {
 		return (
 			<div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-				<div className="text-5xl">📺</div>
+                <Ad className="size-24" />
 
 				<p className="text-sm font-medium text-muted-foreground">
 					No se encontraron publicidades con los filtros aplicados
@@ -110,7 +132,7 @@ export function AdsTable( { ads, filterText, filterTipo, filterEstado, filterEdi
 	}
 
 	return (
-		<div className="overflow-x-auto rounded-xl border border-border bg-card h-[calc(100vh-20rem)]">
+		<div className="overflow-x-auto rounded-xl border border-border bg-card h-[calc(100vh-23rem)]">
 			<table className="w-full text-sm">
 				<thead>
 					<tr className="border-b border-border bg-muted/40">
@@ -122,7 +144,7 @@ export function AdsTable( { ads, filterText, filterTipo, filterEstado, filterEdi
 
 						<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Vigencia</th>
 
-						<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Edificios</th>
+						<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Sedes</th>
 
 						<th className="px-4 py-3.5 text-left text-xs font-semibold text-muted-foreground">Estado</th>
 
@@ -176,12 +198,12 @@ export function AdsTable( { ads, filterText, filterTipo, filterEstado, filterEdi
 
 							<td className="px-4 py-3.5">
 								<div className="flex flex-wrap gap-1.5">
-									{ ad.edificios.map( ( id ) => (
+									{ getCampusesForBuildings( ad.edificios ).map( ( name ) => (
 										<span
-											key       = { id }
+											key       = { name }
 											className = "inline-flex items-center rounded-lg border border-border bg-background px-2.5 py-0.5 text-xs font-medium text-foreground"
 										>
-											{ edificioMap[ id ] || `Edificio ${ id }` }
+											{ name }
 										</span>
 									) ) }
 								</div>
@@ -217,7 +239,7 @@ export function AdsTable( { ads, filterText, filterTipo, filterEstado, filterEdi
 			<ConfirmDialog
 				isOpen    = { deleteTarget !== null }
 				title     = "Eliminar publicidad"
-				message   = { deleteTarget ? `¿Eliminar la publicidad "${ deleteTarget.nombre }"? Esta acción no se puede deshacer.` : '' }
+				message   = { deleteTarget ? `¿Eliminar la publicidad "${ deleteTarget.nombre }"?` : '' }
 				onConfirm = { handleConfirmDelete }
 				onClose   = { ( ) => setDeleteTarget( null ) }
 			/>
