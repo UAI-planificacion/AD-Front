@@ -24,8 +24,8 @@ export default function DashboardPage(): React.JSX.Element {
 
 	if ( isLoading ) {
 		return (
-			<div className="flex min-h-[calc(100vh-10rem)] flex-col gap-8 p-6 bg-background">
-				<div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+			<div className="flex min-h-[calc(100vh-10rem)] flex-col gap-8 p-6 bg-background text-foreground max-w-7xl mx-auto">
+				<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 					<div className="space-y-2">
 						<div className="h-8 w-48 animate-pulse rounded-lg bg-muted" />
 						<div className="h-4 w-72 animate-pulse rounded-lg bg-muted" />
@@ -35,9 +35,62 @@ export default function DashboardPage(): React.JSX.Element {
 				</div>
 
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-					{ Array.from({ length : 4 }).map( ( _, i ) => (
+					{ Array.from( { length : 4 } ).map( ( _, i ) => (
 						<div key = { i } className="h-32 animate-pulse rounded-2xl bg-muted" />
 					) ) }
+				</div>
+
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<div className="lg:col-span-2 rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col">
+						<div className="space-y-2">
+							<div className="h-6 w-48 animate-pulse rounded-lg bg-muted" />
+							<div className="h-4 w-64 animate-pulse rounded-lg bg-muted" />
+						</div>
+
+						<div className="mt-6 flex flex-col divide-y divide-border/50">
+							{ Array.from( { length : 4 } ).map( ( _, i ) => (
+								<div key = { i } className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
+									<div className="flex flex-col gap-2">
+										<div className="h-4 w-48 animate-pulse rounded-lg bg-muted" />
+										<div className="flex items-center gap-2">
+											<div className="h-4 w-12 animate-pulse rounded-full bg-muted" />
+											<div className="h-3.5 w-24 animate-pulse rounded-lg bg-muted" />
+										</div>
+									</div>
+
+									<div className="h-4 w-10 animate-pulse rounded-lg bg-muted" />
+								</div>
+							) ) }
+						</div>
+					</div>
+
+					<div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between gap-6">
+						<div className="space-y-4">
+							<div className="space-y-2">
+								<div className="h-6 w-60 animate-pulse rounded-lg bg-muted" />
+								<div className="h-4 w-full animate-pulse rounded-lg bg-muted" />
+							</div>
+
+							<div className="space-y-3">
+								<div className="h-3 w-40 animate-pulse rounded-lg bg-muted" />
+								<div className="space-y-2">
+									{ Array.from( { length : 5 } ).map( ( _, i ) => (
+										<div key = { i } className="flex items-center gap-2">
+											<div className="h-3 w-3 animate-pulse rounded-full bg-muted shrink-0" />
+											<div className = { `h-4 animate-pulse rounded-lg bg-muted ${
+												i === 0 ? 'w-4/5' :
+												i === 1 ? 'w-3/4' :
+												i === 2 ? 'w-2/3' :
+												i === 3 ? 'w-1/2' : 'w-5/6'
+											}` } />
+										</div>
+									) ) }
+								</div>
+							</div>
+						</div>
+
+						<div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
+					</div>
 				</div>
 			</div>
 		);
