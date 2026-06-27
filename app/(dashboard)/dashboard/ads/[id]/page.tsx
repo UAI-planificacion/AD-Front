@@ -1,60 +1,25 @@
 'use client';
 
-import { useMemo, useState, type JSX } from 'react';
-import { useParams, useRouter }       from 'next/navigation';
+import { useState }             from 'react';
+import { useParams, useRouter } from 'next/navigation';
+
 import {
 	ArrowLeft,
 	Pencil,
 	Trash2,
 	Clock,
 	Calendar,
-	Building2,
 	Image as ImageIcon,
 	Video,
-} from 'lucide-react';
-import { toast } from 'sonner';
+}                   from 'lucide-react';
+import { toast }    from 'sonner';
 
-import { useAds, useDeleteAd } from '@/hooks/use-ads';
-import { ConfirmDialog }       from '@/components/shared/ConfirmDialog';
-
-
-
-const CAMPUS_MAPPING = [
-	{
-		name		: 'Peñalolén',
-		buildings	: [ 1, 2, 3, 4, 5, 6 ],
-	},
-	{
-		name		: 'Errázuriz',
-		buildings	: [ 7 ],
-	},
-	{
-		name		: 'Vitacura',
-		buildings	: [ 8 ],
-	},
-	{
-		name		: 'Viña del Mar',
-		buildings	: [ 9, 10, 11, 12, 13, 14 ],
-	},
-];
-
-function getCampusesForBuildings( buildings : number[] ) : string[] {
-	const campusNames : string[] = [];
-	CAMPUS_MAPPING.forEach( ( campus ) => {
-		if ( campus.buildings.some( ( id ) => buildings.includes( id ) ) ) {
-			campusNames.push( campus.name );
-		}
-	} );
-	return campusNames;
-}
-
-function formatDate( dateStr : string ) : string {
-	return new Date( dateStr ).toLocaleDateString( 'es-CL', {
-		day		: '2-digit',
-		month	: '2-digit',
-		year	: 'numeric',
-	} );
-}
+import {
+    formatDate,
+    getCampusesForBuildings
+}                               from '../utils/ads-helpers';
+import { useAds, useDeleteAd }  from '@/hooks/use-ads';
+import { ConfirmDialog }        from '@/components/shared/ConfirmDialog';
 
 
 export default function AdDetailPage() : React.JSX.Element {
@@ -63,7 +28,7 @@ export default function AdDetailPage() : React.JSX.Element {
 	const adId     = Number( id );
 
 	const { data : ads, isLoading } = useAds( );
-	const deleteMutation           = useDeleteAd( );
+	const deleteMutation            = useDeleteAd( );
 
 	const ad = ads?.find( ( a ) => a.id === adId );
 
@@ -197,7 +162,6 @@ export default function AdDetailPage() : React.JSX.Element {
 				<p className="text-lg font-semibold text-foreground">Publicidad no encontrada</p>
 				<button
 					id        = "ad-detail-back"
-					// onClick   = { ( ) => router.push( '/dashboard/ads' ) }
 					onClick   = { router.back }
 					className = "rounded-xl border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted"
 				>
@@ -223,7 +187,7 @@ export default function AdDetailPage() : React.JSX.Element {
 				<div className="flex items-center gap-3">
 					<button
 						id        = "ad-detail-back"
-						onClick   = { ( ) => router.push( '/dashboard/ads' ) }
+						onClick   = { router.back }
 						className = "flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-muted/50 cursor-pointer"
 					>
 						<ArrowLeft className="size-4" /> Volver
@@ -246,6 +210,7 @@ export default function AdDetailPage() : React.JSX.Element {
 					<div className="flex items-start justify-between">
 						<div>
 							<h2 className="text-2xl font-bold tracking-tight text-foreground">{ ad.nombre }</h2>
+
 							<p className="text-xs text-muted-foreground mt-1">
 								Creada el { formatDate( ad.fecha_creacion ) }
 							</p>
@@ -293,10 +258,13 @@ export default function AdDetailPage() : React.JSX.Element {
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-foreground font-medium">
 							<div className="flex items-center gap-2">
 								<Calendar className="size-4 text-muted-foreground" />
+
 								<span>{ formatDate( ad.fecha_inicio ) } - { formatDate( ad.fecha_fin ) }</span>
 							</div>
+
 							<div className="flex items-center gap-2">
 								<Clock className="size-4 text-muted-foreground" />
+
 								<span>{ ad.hora_inicio.slice( 0, 5 ) } - { ad.hora_fin.slice( 0, 5 ) }</span>
 							</div>
 						</div>
@@ -307,6 +275,7 @@ export default function AdDetailPage() : React.JSX.Element {
 					{ /* Sedes asignadas */ }
 					<div className="flex flex-col gap-3">
 						<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sedes asignadas</span>
+
 						<div className="flex flex-wrap gap-1.5">
 							{ getCampusesForBuildings( ad.edificios ).map( ( name ) => (
 								<span
@@ -324,6 +293,7 @@ export default function AdDetailPage() : React.JSX.Element {
 					{ /* Detalles técnicos */ }
 					<div className="flex flex-col gap-3">
 						<span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Detalles técnicos</span>
+
 						<dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
 							{ [
 								{
@@ -373,11 +343,11 @@ export default function AdDetailPage() : React.JSX.Element {
 				{ /* ── Columna Derecha: Vista Previa Unificada ── */ }
 				<div className="flex flex-col h-full">
 					{ /* Card de Vista Previa */ }
-					<div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col gap-4 flex-1">
-						<div>
+					<div className="rounded-2xl border border-border bg-card p-4 shadow-xs flex flex-col gap-4 flex-1">
+						{/* <div>
 							<h3 className="text-lg font-bold tracking-tight">Vista previa</h3>
 							<p className="text-xs text-muted-foreground mt-0.5">Así se ve actualmente tu publicidad</p>
-						</div>
+						</div> */}
 
 						<div className="overflow-hidden rounded-xl border border-border bg-muted/20 flex items-center justify-center flex-1 min-h-[350px]">
 							{ isVideo ? (
@@ -396,6 +366,7 @@ export default function AdDetailPage() : React.JSX.Element {
 						</div>
 					</div>
 				</div>
+
 				<ConfirmDialog
 					isOpen    = { showDeleteConfirm }
 					title     = "Eliminar publicidad"
