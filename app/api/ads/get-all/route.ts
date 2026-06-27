@@ -10,7 +10,7 @@ import { ENV }                  from '@/config/envs/env';
 export async function GET( request : Request ) : Promise<NextResponse> {
 	try {
 		const { searchParams } = new URL( request.url );
-		const isVigent = searchParams.get( 'vigentes' ) === 'true';
+		const isVigent = searchParams.get( 'vigentes' ) !== 'false';
 
 		const endpoint = isVigent ? EXTERNAL_ENDPOINT.ADS.CURRENT : EXTERNAL_ENDPOINT.ADS.GET_ALL;
 
