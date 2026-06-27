@@ -5,9 +5,9 @@ import { useMemo, type JSX } from 'react';
 import {
 	MultiSelectCombobox,
 	type Option,
-} from './Combobox';
-import { Label } from '@/components/ui/label';
-import { Props } from './select-props';
+}                   from './Combobox';
+import { Label }    from '@/components/ui/label';
+import { Props }    from './select-props';
 
 
 const CAMPUS_BUILDINGS : Record<string, string[]> = {
