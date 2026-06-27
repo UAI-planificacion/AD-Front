@@ -19,28 +19,45 @@ import { cn }       from '@/lib/utils';
 
 
 interface DateRangePickerProps {
-	value?       : { from?: string; to?: string };
-	onChange     : ( range: { from: string; to: string } | null ) => void;
+	value?       : { from? : string; to? : string };
+	onChange     : ( range : { from : string; to? : string } | null ) => void;
 	className?   : string;
 	placeholder? : string;
 	disabled?    : boolean;
 }
 
 
+function parseLocalDate( dateStr : string ) : Date {
+	const [ year, month, day ] = dateStr.split( '-' ).map( Number );
+	return new Date( year, month - 1, day );
+}
+
+
 export function DateRangePicker( { value, onChange, className, placeholder = 'Seleccionar fechas', disabled = false }: DateRangePickerProps ): React.JSX.Element {
-	const today = React.useMemo( () => {
-		const d = new Date();
+	const today = React.useMemo( ( ) => {
+		const d = new Date( );
 		d.setHours( 0, 0, 0, 0 );
 		return d;
 	}, [] );
 
+	const [ open, setOpen ] = React.useState( false );
+
 	// Parse value to Date objects
 	const [ date, setDate ] = React.useState<DateRange | undefined>( ( ) => {
-		if ( !value ) return undefined;
+		if ( !value ) {
+			return undefined;
+		}
 		return {
-			from : value.from ? new Date( `${ value.from }T12:00:00` ) : undefined,
-			to   : value.to ? new Date( `${ value.to }T12:00:00` ) : undefined,
+			from : value.from ? parseLocalDate( value.from ) : undefined,
+			to   : value.to ? parseLocalDate( value.to ) : undefined,
 		};
+	} );
+
+	const [ month, setMonth ] = React.useState<Date | undefined>( ( ) => {
+		if ( !value ) {
+			return undefined;
+		}
+		return value.from ? parseLocalDate( value.from ) : undefined;
 	} );
 
 	React.useEffect( ( ) => {
@@ -48,21 +65,31 @@ export function DateRangePicker( { value, onChange, className, placeholder = 'Se
 			setDate( undefined );
 			return;
 		}
+		const fromDate = value.from ? parseLocalDate( value.from ) : undefined;
 		setDate( {
-			from : value.from ? new Date( `${ value.from }T12:00:00` ) : undefined,
-			to   : value.to ? new Date( `${ value.to }T12:00:00` ) : undefined,
+			from : fromDate,
+			to   : value.to ? parseLocalDate( value.to ) : undefined,
 		} );
+		if ( fromDate ) {
+			setMonth( fromDate );
+		}
 	}, [ value ] );
 
+	const handleOpenChange = ( isOpen : boolean ) : void => {
+		setOpen( isOpen );
+		if ( isOpen && date?.from ) {
+			setMonth( date.from );
+		}
+	};
 
-	function handleSelect( newRange: DateRange | undefined ): void {
+	function handleSelect( newRange : DateRange | undefined ) : void {
 		setDate( newRange );
-		if ( newRange?.from && newRange?.to ) {
+		if ( newRange?.from ) {
 			const fromStr = format( newRange.from, 'yyyy-MM-dd' );
-			const toStr   = format( newRange.to, 'yyyy-MM-dd' );
+			const toStr   = newRange.to ? format( newRange.to, 'yyyy-MM-dd' ) : undefined;
 			onChange( {
-				from : fromStr,
-				to   : toStr,
+				from	: fromStr,
+				to		: toStr,
 			} );
 		} else {
 			onChange( null );
@@ -72,7 +99,7 @@ export function DateRangePicker( { value, onChange, className, placeholder = 'Se
 
 	return (
 		<div className = { cn( 'grid gap-2', className ) }>
-			<Popover>
+			<Popover open = { open } onOpenChange = { handleOpenChange }>
 				<PopoverTrigger
 					id        = "date-range-trigger"
 					disabled  = { disabled }
@@ -97,7 +124,8 @@ export function DateRangePicker( { value, onChange, className, placeholder = 'Se
 				<PopoverContent className="w-auto p-0" align="start">
 					<Calendar
 						mode           = "range"
-						defaultMonth   = { date?.from }
+						month          = { month }
+						onMonthChange  = { setMonth }
 						selected       = { date }
 						onSelect       = { handleSelect }
 						numberOfMonths = { 2 }
