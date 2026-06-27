@@ -1,3 +1,7 @@
+import { format }   from 'date-fns';
+import { es }       from 'date-fns/locale';
+
+
 export const CAMPUS_MAPPING = [
 	{
 		name      : 'Peñalolén',
@@ -31,18 +35,34 @@ export function getCampusesForBuildings( buildings : number[] ) : string[] {
 }
 
 
+// export function formatDate( dateStr : string ) : string {
+// 	if ( !dateStr ) return '';
+
+// 	const parts = dateStr.split( '-' );
+
+// 	if ( parts.length !== 3 ) return dateStr;
+
+// 	const year  = parts[ 0 ];
+// 	const month = parts[ 1 ];
+// 	const day   = parts[ 2 ].split('T')[0];
+
+// 	return `${ day }/${ month }/${ year }`;
+// }
+
+
+
+export function parseLocalDate( dateStr : string ) : Date {
+	const [ year, month, day ] = dateStr.split( '-' ).map( Number );
+	return new Date( year, month - 1, day );
+}
+
+
 export function formatDate( dateStr : string ) : string {
-	if ( !dateStr ) return '';
-
-	const parts = dateStr.split( '-' );
-
-	if ( parts.length !== 3 ) return dateStr;
-
-	const year  = parts[ 0 ];
-	const month = parts[ 1 ];
-	const day   = parts[ 2 ];
-
-	return `${ day }/${ month }/${ year }`;
+	if ( !dateStr ) {
+		return '';
+	}
+	const date = parseLocalDate( dateStr );
+	return format( date, 'dd MMM yyyy', { locale: es } );
 }
 
 
