@@ -22,10 +22,12 @@ export const ADS_QUERY_KEY = [ 'ads' ] as const;
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
 export function useAds( isVigent? : boolean ) : UseQueryResult<Publicidad[], Error> {
+	const fetchVigentes = isVigent !== false;
+
 	return useQuery( {
-		queryKey : isVigent ? [ ...ADS_QUERY_KEY, 'vigentes' ] : ADS_QUERY_KEY,
+		queryKey : fetchVigentes ? [ ...ADS_QUERY_KEY, 'vigentes' ] : [ ...ADS_QUERY_KEY, 'historicos' ],
 		queryFn  : ( ) => connectRequest<Publicidad[]>( {
-			endpoint	: isVigent ? `${ INTERNAL_ENDPOINT.ADS.GET_ALL }?vigentes=true` : INTERNAL_ENDPOINT.ADS.GET_ALL,
+			endpoint	: fetchVigentes ? `${ INTERNAL_ENDPOINT.ADS.GET_ALL }?vigentes=true` : `${ INTERNAL_ENDPOINT.ADS.GET_ALL }?vigentes=false`,
 			method		: METHOD.GET,
 			isInternal	: true,
 		} ),
