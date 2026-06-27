@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import {
 	MonitorPlay,
 	CheckCircle,
@@ -13,13 +14,13 @@ import {
     Ad,
 } from 'lucide-react';
 
-import { useAds }       from '@/hooks/use-ads';
-import { buildKpiStats } from '@/lib/models/ads';
+import { useAds }           from '@/hooks/use-ads';
+import { buildKpiStats }    from '@/lib/models/ads';
 
 
 export default function DashboardPage(): React.JSX.Element {
-	const router                             = useRouter();
-	const { data: ads, isLoading, isError }  = useAds();
+	const router                            = useRouter();
+	const { data: ads, isLoading, isError } = useAds();
 	const [ showGuide, setShowGuide ]       = useState( false );
 
 	if ( isLoading ) {
@@ -60,7 +61,7 @@ export default function DashboardPage(): React.JSX.Element {
 
 									<div className="h-4 w-10 animate-pulse rounded-lg bg-muted" />
 								</div>
-							) ) }
+							))}
 						</div>
 					</div>
 
@@ -73,6 +74,7 @@ export default function DashboardPage(): React.JSX.Element {
 
 							<div className="space-y-3">
 								<div className="h-3 w-40 animate-pulse rounded-lg bg-muted" />
+
 								<div className="space-y-2">
 									{ Array.from( { length : 5 } ).map( ( _, i ) => (
 										<div key = { i } className="flex items-center gap-2">
@@ -84,7 +86,7 @@ export default function DashboardPage(): React.JSX.Element {
 												i === 3 ? 'w-1/2' : 'w-5/6'
 											}` } />
 										</div>
-									) ) }
+									))}
 								</div>
 							</div>
 						</div>
