@@ -1,17 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
 	MonitorPlay,
 	CheckCircle,
-	Building2,
-	Timer,
-	Eye,
-	X,
-	BookOpen,
-    Ad,
+	Ad,
+	Clock,
+	CalendarDays,
 } from 'lucide-react';
 
 import { useAds }           from '@/hooks/use-ads';
@@ -19,9 +15,13 @@ import { buildKpiStats }    from '@/lib/models/ads';
 
 
 export default function DashboardPage(): React.JSX.Element {
-	const router                            = useRouter();
-	const { data: ads, isLoading, isError } = useAds();
-	const [ showGuide, setShowGuide ]       = useState( false );
+	const router = useRouter( );
+
+    const {
+        data: ads,
+        isLoading,
+        isError
+    } = useAds( );
 
 	if ( isLoading ) {
 		return (
@@ -90,8 +90,6 @@ export default function DashboardPage(): React.JSX.Element {
 								</div>
 							</div>
 						</div>
-
-						<div className="h-10 w-full animate-pulse rounded-xl bg-muted" />
 					</div>
 				</div>
 			</div>
@@ -110,9 +108,40 @@ export default function DashboardPage(): React.JSX.Element {
 
 	const stats = buildKpiStats( ads );
 
-	const recentAds = [ ...ads ]
-		.sort( ( a, b ) => new Date( b.fecha_creacion ).getTime() - new Date( a.fecha_creacion ).getTime() )
-		.slice( 0, 4 );
+
+    const getTodayLocalDateString = ( ) : string => {
+		const today = new Date( );
+
+        const year  = today.getFullYear( );
+		const month = String( today.getMonth( ) + 1 ).padStart( 2, '0' );
+		const day   = String( today.getDate( ) ).padStart( 2, '0' );
+
+        return `${ year }-${ month }-${ day }`;
+	};
+
+
+    const getFutureLocalDateString = ( daysAhead : number ) : string => {
+		const date = new Date( );
+
+        date.setDate( date.getDate( ) + daysAhead );
+
+        const year  = date.getFullYear( );
+		const month = String( date.getMonth( ) + 1 ).padStart( 2, '0' );
+		const day   = String( date.getDate( ) ).padStart( 2, '0' );
+
+        return `${ year }-${ month }-${ day }`;
+	};
+
+	const todayStr         = getTodayLocalDateString( );
+	const maxFutureDateStr = getFutureLocalDateString( 3 );
+
+	const activeCount      = ads.filter( ( a ) => a.activo ).length;
+	const inactiveCount    = ads.length - activeCount;
+	const activePercentage = ads.length > 0 ? Math.round( ( activeCount / ads.length ) * 100 ) : 0;
+
+	const expiringToday    = ads.filter( ( a ) => a.activo && a.fecha_fin === todayStr ).length;
+	const expiringSoon     = ads.filter( ( a ) => a.activo && a.fecha_fin > todayStr && a.fecha_fin <= maxFutureDateStr ).length;
+	const scheduledCount   = ads.filter( ( a ) => a.activo && a.fecha_inicio > todayStr ).length;
 
 	return (
 		<div className="flex min-h-[calc(100vh-10rem)] flex-col gap-8 p-6 bg-background text-foreground max-w-7xl mx-auto">
@@ -148,7 +177,9 @@ export default function DashboardPage(): React.JSX.Element {
 					<div className="mt-2">
 						<span className="text-3xl font-bold tracking-tight">{ stats.total }</span>
 
-						<p className="text-xs text-muted-foreground mt-1">+2 desde el mes pasado</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							{ `${ activeCount } activas, ${ inactiveCount } inactivas` }
+						</p>
 					</div>
 				</div>
 
@@ -163,91 +194,106 @@ export default function DashboardPage(): React.JSX.Element {
 					<div className="mt-2">
 						<span className="text-3xl font-bold tracking-tight">{ stats.activas }</span>
 
-						<p className="text-xs text-muted-foreground mt-1">-1 desde la semana pasada</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							{ `${ activePercentage }% del total en circulación` }
+						</p>
 					</div>
 				</div>
 
-				{ /* Card 3: Edificios */ }
+                { /* Card 5: Por Vencer */ }
 				<div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between h-36">
 					<div className="flex items-center justify-between text-muted-foreground">
-						<span className="text-sm font-medium text-foreground">Edificios Cubiertos</span>
+						<span className="text-sm font-medium text-foreground">Por Vencer (3 días)</span>
 
-						<Building2 className="size-4 text-muted-foreground" />
+						<Clock className="size-4 text-muted-foreground" />
 					</div>
 
 					<div className="mt-2">
-						<span className="text-3xl font-bold tracking-tight">{ stats.edificiosCubiertos }</span>
+						<span className="text-3xl font-bold tracking-tight">
+							{ expiringToday + expiringSoon }
+						</span>
 
-						<p className="text-xs text-muted-foreground mt-1">+1 desde el mes pasado</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							{ expiringToday === 0
+								? 'Hoy no caduca ninguna'
+								: expiringToday === 1
+									? 'Hoy caduca 1 publicidad'
+									: `Hoy caducan ${ expiringToday } publicidades`
+							}
+						</p>
 					</div>
 				</div>
 
-				{ /* Card 4: Tiempo Promedio */ }
+				{ /* Card 6: Programadas */ }
 				<div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between h-36">
 					<div className="flex items-center justify-between text-muted-foreground">
-						<span className="text-sm font-medium text-foreground">Tiempo Promedio</span>
+						<span className="text-sm font-medium text-foreground">Programadas</span>
 
-						<Timer className="size-4 text-muted-foreground" />
+						<CalendarDays className="size-4 text-muted-foreground" />
 					</div>
 
 					<div className="mt-2">
-						<span className="text-3xl font-bold tracking-tight">{ stats.duracionPromedio }s</span>
+						<span className="text-3xl font-bold tracking-tight">{ scheduledCount }</span>
 
-						<p className="text-xs text-muted-foreground mt-1">+2s desde el mes pasado</p>
+						<p className="text-xs text-muted-foreground mt-1">
+							{ `${ scheduledCount } anuncios por iniciar a futuro` }
+						</p>
 					</div>
 				</div>
 			</div>
 
 			{ /* ── Bottom Section ── */ }
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				{ /* Column Left: Publicidades Recientes */ }
-				<div className="lg:col-span-2 rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col">
+				{ /* Column Left: Guía de Uso */ }
+				<div className="lg:col-span-2 rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col gap-6">
 					<div>
-						<h2 className="text-lg font-bold text-foreground">Publicidades Recientes</h2>
+						<h2 className="text-lg font-bold text-foreground">Guía de Uso de la Aplicación</h2>
 
 						<p className="text-sm text-muted-foreground mt-0.5">
-							Las últimas publicidades agregadas al sistema
+							Sigue estos pasos para gestionar tus publicidades en las pantallas verticales
 						</p>
 					</div>
 
-					<div className="mt-6 flex flex-col divide-y divide-border/50">
-						{ recentAds.length === 0 ? (
-							<p className="text-sm text-muted-foreground py-6 text-center">
-								No hay publicidades registradas.
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div className="space-y-1.5 p-4 rounded-xl border border-border/40 bg-muted/5">
+							<div className="flex items-center gap-2">
+								<span className="flex size-6 items-center justify-center rounded-lg bg-black text-white text-xs font-bold dark:bg-white dark:text-black">1</span>
+								<h3 className="font-semibold text-foreground">Crear una Publicidad</h3>
+							</div>
+							<p className="text-sm text-muted-foreground pl-8">
+								Sube imágenes en formato vertical (9:16) o videos de hasta 60 segundos de duración máxima.
 							</p>
-						) : (
-							recentAds.map( ( ad ) => (
-								<div key = { ad.id } className="flex items-center justify-between py-4 first:pt-0 last:pb-0">
-									<div className="flex flex-col gap-1.5">
-										<span className="text-sm font-semibold text-foreground">{ ad.nombre }</span>
+						</div>
 
-										<div className="flex items-center gap-2">
-											{ ad.activo ? (
-												<span className="rounded-full bg-black text-white px-2.5 py-0.5 text-[10px] font-bold dark:bg-white dark:text-black">
-													Activa
-												</span>
-											) : (
-												<span className="rounded-full bg-zinc-100 text-zinc-500 px-2.5 py-0.5 text-[10px] font-bold dark:bg-zinc-800 dark:text-zinc-400">
-													Inactiva
-												</span>
-											) }
+						<div className="space-y-1.5 p-4 rounded-xl border border-border/40 bg-muted/5">
+							<div className="flex items-center gap-2">
+								<span className="flex size-6 items-center justify-center rounded-lg bg-black text-white text-xs font-bold dark:bg-white dark:text-black">2</span>
+								<h3 className="font-semibold text-foreground">Configurar la Vigencia</h3>
+							</div>
+							<p className="text-sm text-muted-foreground pl-8">
+								Define el rango de fechas en el calendario y el horario diario (ej. de 08:00 a 20:00) de proyección.
+							</p>
+						</div>
 
-											<span className="text-xs text-muted-foreground">
-												{ ad.tipo === 'video' ? 'Video' : 'Imagen' } • { ad.duracion }s
-											</span>
-										</div>
-									</div>
+						<div className="space-y-1.5 p-4 rounded-xl border border-border/40 bg-muted/5">
+							<div className="flex items-center gap-2">
+								<span className="flex size-6 items-center justify-center rounded-lg bg-black text-white text-xs font-bold dark:bg-white dark:text-black">3</span>
+								<h3 className="font-semibold text-foreground">Asignar Edificios</h3>
+							</div>
+							<p className="text-sm text-muted-foreground pl-8">
+								Selecciona las ubicaciones y edificios de los campus donde deseas mostrar la publicidad.
+							</p>
+						</div>
 
-									<button
-										id        = { `recent-view-${ ad.id }` }
-										onClick   = { () => router.push( `/dashboard/ads/${ ad.id }` ) }
-										className = "flex items-center gap-1.5 text-xs font-semibold text-foreground hover:text-muted-foreground transition-colors cursor-pointer"
-									>
-										<Eye className="size-3.5" /> Ver
-									</button>
-								</div>
-							) )
-						) }
+						<div className="space-y-1.5 p-4 rounded-xl border border-border/40 bg-muted/5">
+							<div className="flex items-center gap-2">
+								<span className="flex size-6 items-center justify-center rounded-lg bg-black text-white text-xs font-bold dark:bg-white dark:text-black">4</span>
+								<h3 className="font-semibold text-foreground">Monitoreo y Acciones</h3>
+							</div>
+							<p className="text-sm text-muted-foreground pl-8">
+								Visualiza detalles en tiempo real, edita edificios asignados o elimina anuncios expirados desde la sección de Publicidades.
+							</p>
+						</div>
 					</div>
 				</div>
 
@@ -300,78 +346,8 @@ export default function DashboardPage(): React.JSX.Element {
 							</ul>
 						</div>
 					</div>
-
-					<button
-						id        = "view-guide-btn"
-						onClick   = { () => setShowGuide( true ) }
-						className = "w-full rounded-xl border border-border bg-background py-2.5 text-sm font-semibold text-foreground transition-all hover:bg-muted/50 cursor-pointer"
-					>
-						Ver guía completa
-					</button>
 				</div>
 			</div>
-
-			{ /* ── Guide Modal ── */ }
-			{ showGuide && (
-				<div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-					<div className="relative w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-xl flex flex-col gap-4 text-foreground">
-						<button
-							onClick   = { () => setShowGuide( false ) }
-							className = "absolute right-4 top-4 rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-							aria-label = "Cerrar guía"
-						>
-							<X className="size-5" />
-						</button>
-
-						<div className="flex items-center gap-2 mt-2">
-							<BookOpen className="size-5 text-primary" />
-
-							<h3 className="text-lg font-bold">Guía de Uso de la Aplicación</h3>
-						</div>
-
-						<div className="mt-2 space-y-4 text-sm text-muted-foreground">
-							<div className="space-y-1">
-								<p className="font-semibold text-foreground">1. Crear una Publicidad</p>
-
-								<p>
-									Haz clic en el botón <strong>&quot;Nueva Publicidad&quot;</strong>. Sube una imagen de aspecto vertical (9:16) o un video de hasta 60 segundos de duración.
-								</p>
-							</div>
-
-							<div className="space-y-1">
-								<p className="font-semibold text-foreground">2. Configurar la Vigencia</p>
-
-								<p>
-									Define el rango de fechas en el calendario y el horario diario (ej. de 08:00 a 20:00) en el que se proyectará el anuncio en las pantallas.
-								</p>
-							</div>
-
-							<div className="space-y-1">
-								<p className="font-semibold text-foreground">3. Asignar Edificios</p>
-
-								<p>
-									Selecciona las ubicaciones y edificios de los campus donde deseas mostrar la publicidad utilizando el selector de sedes.
-								</p>
-							</div>
-
-							<div className="space-y-1">
-								<p className="font-semibold text-foreground">4. Monitoreo y Acciones</p>
-
-								<p>
-									En la sección de Publicidades podrás ver el listado completo, ver detalles de visualización, editar los edificios asignados o eliminar anuncios expirados.
-								</p>
-							</div>
-						</div>
-
-						<button
-							onClick   = { () => setShowGuide( false ) }
-							className = "mt-4 w-full rounded-xl bg-black py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-						>
-							Entendido
-						</button>
-					</div>
-				</div>
-			) }
 		</div>
 	);
 }
