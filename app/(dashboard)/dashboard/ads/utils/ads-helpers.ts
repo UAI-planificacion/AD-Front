@@ -52,7 +52,12 @@ export function getCampusesForBuildings( buildings : number[] ) : string[] {
 
 
 export function parseLocalDate( dateStr : string ) : Date {
-	const [ year, month, day ] = dateStr.split( '-' ).map( Number );
+	if ( !dateStr ) return new Date( );
+	const cleanDateStr = dateStr.includes( 'T' ) ? dateStr.split( 'T' )[ 0 ] : dateStr.split( ' ' )[ 0 ];
+	const [ year, month, day ] = cleanDateStr.split( '-' ).map( Number );
+	if ( isNaN( year ) || isNaN( month ) || isNaN( day ) ) {
+		return new Date( dateStr );
+	}
 	return new Date( year, month - 1, day );
 }
 
@@ -61,8 +66,15 @@ export function formatDate( dateStr : string ) : string {
 	if ( !dateStr ) {
 		return '';
 	}
-	const date = parseLocalDate( dateStr );
-	return format( date, 'dd MMM yyyy', { locale: es } );
+	try {
+		const date = parseLocalDate( dateStr );
+		if ( isNaN( date.getTime( ) ) ) {
+			return '';
+		}
+		return format( date, 'dd MMM yyyy', { locale : es } );
+	} catch {
+		return '';
+	}
 }
 
 
