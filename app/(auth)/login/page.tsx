@@ -13,7 +13,7 @@ export default function LoginPage(): React.JSX.Element {
                 <h2 className="text-2xl font-black tracking-tight text-foreground">
                     Bienvenido a{' '}
                     <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-500 to-teal-400">
-                        Project
+                        Publicidades
                     </span>
                 </h2>
 
