@@ -10,8 +10,8 @@ import { Footer }           from '@/components/shared/home/footer';
 
 
 export const metadata: Metadata = {
-    title       : 'Proyect',
-    description : 'Descripción del proyecto.',
+    title       : 'Publicidades UAI',
+    description : 'Panel de control de publicidades UAI.',
     icons       : {
         icon        : '/favicon.ico',
         shortcut    : '/favicon.ico',
