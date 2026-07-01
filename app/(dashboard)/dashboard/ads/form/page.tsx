@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect }    from 'react';
+import { useRouter, useSearchParams }       from 'next/navigation';
 
-import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Save }            from 'lucide-react';
 
 import { AdsForm }          from '../components/ads-form';
@@ -17,8 +17,10 @@ function AdFormContent() : React.JSX.Element {
 	const searchParams = useSearchParams( );
 	const idParam      = searchParams.get( 'id' );
 	const adId         = idParam ? Number( idParam ) : null;
+	const modeParam    = searchParams.get( 'mode' );
+	const isVigent     = modeParam !== 'historicos';
 
-	const { data : ads, isLoading } = useAds( );
+	const { data : ads, isLoading } = useAds( isVigent );
 	const [ ad, setAd ]             = useState<Publicidad | undefined>( undefined );
 
 	const [ isDirty, setIsDirty ]             = useState( false );
@@ -29,7 +31,8 @@ function AdFormContent() : React.JSX.Element {
 	useEffect( ( ) => {
 		if ( ads && adId !== null ) {
 			const foundAd = ads.find( ( a ) => a.id === adId );
-			setAd( foundAd );
+
+            setAd( foundAd );
 		}
 	}, [ ads, adId ] );
 
@@ -166,9 +169,10 @@ function AdFormContent() : React.JSX.Element {
 				<button
 					id        = "ad-form-back-error"
 					onClick   = { router.back }
-					className = "rounded-xl border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted cursor-pointer"
+					className = "flex items-center gap-2 cursor-pointer rounded-xl border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted"
 				>
-					← Volver al listado
+					<ArrowLeft className="size-4" />
+					Volver al listado
 				</button>
 			</div>
 		);
