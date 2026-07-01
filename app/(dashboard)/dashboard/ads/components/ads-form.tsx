@@ -18,6 +18,7 @@ import { HeadquartersSelect }       from '@/components/combobox/headquarters-sel
 import { cn }                       from '@/lib/utils';
 import { Label }                    from '@/components/ui/label';
 import { getCampusesForBuildings }  from '../utils/ads-helpers';
+import { ConfirmDialog }            from '@/components/shared/ConfirmDialog';
 
 
 function areArraysEqual( a : number[], b : number[] ) : boolean {
@@ -53,25 +54,53 @@ export function AdsForm( { mode, initialData, onDirtyChange, onPendingChange }: 
 	const [ archivoUrl, setArchivoUrl ]   = useState( initialData?.archivo_url   ?? '' );
 	const [ file, setFile ]               = useState<File | null>( null );
 	const [ activo, setActivo ]           = useState( initialData?.activo        ?? true );
+	const [ showPastDateConfirm, setShowPastDateConfirm ] = useState( false );
 
 	// Error state
 	const [ errors, setErrors ] = useState<Partial<Record<string, string>>>( { } );
 
 	const isPending = createMutation.isPending || updateMutation.isPending;
 
+	const getTodayLocalDateString = ( ) : string => {
+		const today = new Date( );
+		const year  = today.getFullYear( );
+		const month = String( today.getMonth( ) + 1 ).padStart( 2, '0' );
+		const day   = String( today.getDate( ) ).padStart( 2, '0' );
+		return `${ year }-${ month }-${ day }`;
+	};
+
+	const todayStr  = getTodayLocalDateString( );
+	const isExpired = fechaFin ? fechaFin <= todayStr : false;
+
+	// Si las fechas pasan a estar expiradas, desactivar el switch automáticamente
+	useEffect( ( ) => {
+		if ( isExpired ) {
+			const timer = setTimeout( ( ) => {
+				setActivo( false );
+			}, 0 );
+			return ( ) => clearTimeout( timer );
+		}
+	}, [ isExpired ] );
+
+	// Si el usuario cambia las fechas y no están expiradas, activar automáticamente
+	useEffect( ( ) => {
+		if ( mode === 'edit' && initialData && !initialData.activo ) {
+			if ( fechaInicio !== initialData.fecha_inicio || fechaFin !== initialData.fecha_fin ) {
+				if ( !isExpired ) {
+					const timer = setTimeout( ( ) => {
+						setActivo( true );
+					}, 0 );
+					return ( ) => clearTimeout( timer );
+				}
+			}
+		}
+	}, [ fechaInicio, fechaFin, initialData, mode, isExpired ] );
+
 	useEffect( ( ) => {
 		if ( onPendingChange ) {
 			onPendingChange( isPending );
 		}
 	}, [ isPending, onPendingChange ] );
-
-	useEffect( ( ) => {
-		if ( mode === 'edit' && initialData && !initialData.activo ) {
-			if ( fechaInicio !== initialData.fecha_inicio || fechaFin !== initialData.fecha_fin ) {
-				setActivo( true );
-			}
-		}
-	}, [ fechaInicio, fechaFin, initialData, mode ] );
 
 	useEffect( ( ) => {
 		if ( !onDirtyChange ) return;
@@ -178,10 +207,23 @@ export function AdsForm( { mode, initialData, onDirtyChange, onPendingChange }: 
 	}
 
 
-	async function handleSubmit( e: FormEvent ): Promise<void> {
+	async function handleSubmit( e : FormEvent ) : Promise<void> {
 		e.preventDefault( );
 		if ( !validate( ) ) return;
 
+		const todayStr = getTodayLocalDateString( );
+		const isInactiveAndPast = !activo && ( fechaFin ? fechaFin <= todayStr : false );
+
+		if ( isInactiveAndPast ) {
+			setShowPastDateConfirm( true );
+			return;
+		}
+
+		await executeSubmit( );
+	}
+
+
+	async function executeSubmit( ) : Promise<void> {
 		try {
 			if ( mode === 'edit' && initialData ) {
 				const dto : UpdateAdDto = {
@@ -197,26 +239,31 @@ export function AdsForm( { mode, initialData, onDirtyChange, onPendingChange }: 
 				await updateMutation.mutateAsync( { id : initialData.id, dto } );
 				toast.success( 'Publicidad actualizada correctamente' );
 			} else {
-				const formData = new FormData();
-				formData.append( 'nombre', nombre );
-				if ( file ) {
+				const formData = new FormData( );
+
+                formData.append( 'nombre', nombre );
+
+                if ( file ) {
 					formData.append( 'archivo', file );
 				}
-				formData.append( 'duracion', String( duracion ) );
+
+                formData.append( 'duracion', String( duracion ) );
 				formData.append( 'fecha_inicio', fechaInicio );
 				formData.append( 'fecha_fin', fechaFin );
 				formData.append( 'hora_inicio', horaInicio.substring( 0, 5 ) );
 				formData.append( 'hora_fin', horaFin.substring( 0, 5 ) );
 				formData.append( 'archivo_dimensiones', '384x1080' );
-				edificios.forEach( ( id ) => {
+
+                edificios.forEach( ( id ) => {
 					formData.append( 'edificios', String( id ) );
-				} );
+				});
 
 				await createMutation.mutateAsync( formData );
 				toast.success( 'Publicidad creada correctamente' );
 			}
 
-			router.push( '/dashboard/ads' );
+			// router.push( '/dashboard/ads' );
+            router.back();
 		} catch {
 			toast.error( 'Ocurrió un error. Intenta de nuevo.' );
 		}
@@ -354,6 +401,38 @@ export function AdsForm( { mode, initialData, onDirtyChange, onPendingChange }: 
                         </div>
                     </div>
                 )}
+
+				{ /* Switch de Estado Activo/Inactivo */ }
+				<div className="flex items-center justify-between rounded-2xl border border-border p-4 bg-muted/10">
+					<div className="flex flex-col gap-1">
+						<Label className="font-semibold">
+							Publicidad Activa
+						</Label>
+						<span className="text-xs text-muted-foreground font-medium">
+							{ isExpired
+								? "No se puede activar porque la fecha de fin ya expiró"
+								: "Permite activar o desactivar la publicidad manualmente"
+							}
+						</span>
+					</div>
+
+					<button
+						type      = "button"
+						onClick   = { ( ) => setActivo( !activo ) }
+						disabled  = { isExpired }
+						className = { cn(
+							"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+							activo ? "bg-black dark:bg-white" : "bg-zinc-200 dark:bg-zinc-700"
+						) }
+					>
+						<span
+							className = { cn(
+								"pointer-events-none inline-block size-5 transform rounded-full bg-background shadow-sm ring-0 transition duration-200 ease-in-out",
+								activo ? "translate-x-5" : "translate-x-0"
+							) }
+						/>
+					</button>
+				</div>
 			</div>
 
 			{ /* ── RIGHT: Preview + Actions (Solo en modo edición) ── */ }
@@ -429,6 +508,18 @@ export function AdsForm( { mode, initialData, onDirtyChange, onPendingChange }: 
 					</div>
 				</div>
 			) }
+
+			<ConfirmDialog
+				isOpen		= { showPastDateConfirm }
+				title		= "Publicidad Inactiva"
+				message		= "La publicidad se guardará como inactiva ya que su fecha de fin es anterior o igual al día de hoy y no se ha actualizado."
+				variant		= "primary"
+				onConfirm	= { ( ) => {
+					setShowPastDateConfirm( false );
+					executeSubmit( );
+				} }
+				onClose		= { ( ) => setShowPastDateConfirm( false ) }
+			/>
 		</form>
 	);
 }
