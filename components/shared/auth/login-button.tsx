@@ -1,10 +1,9 @@
 'use client';
 
-import { LogIn, LogOut, User } from 'lucide-react';
-import { useRouter }           from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button }                              from '@/components/ui/button';
+import { LogOut, User } from 'lucide-react';
+
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,12 +12,23 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { authClient } from '@/lib/auth-client';
+}                       from '@/components/ui/dropdown-menu';
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage
+}                       from '@/components/ui/avatar';
+import { Button }       from '@/components/ui/button';
+import { authClient }   from '@/lib/auth-client';
+
 
 export function LoginButton(): React.JSX.Element {
-    const router                       = useRouter();
-    const { data: session, isPending } = authClient.useSession();
+    const router = useRouter();
+
+    const {
+        data: session,
+        isPending
+    } = authClient.useSession();
 
     const handleLogin = async (): Promise<void> => {
         await authClient.signIn.social({
@@ -77,8 +87,6 @@ export function LoginButton(): React.JSX.Element {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-56 rounded-xl">
-                {/* DropdownMenuLabel must be inside a DropdownMenuGroup
-                    because @base-ui/react requires GroupLabel inside Menu.Group */}
                 <DropdownMenuGroup>
                     <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col gap-1">
