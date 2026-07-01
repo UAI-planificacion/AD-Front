@@ -1,7 +1,11 @@
 'use client';
 
-import { useState }             from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import {
+    useParams,
+    useRouter,
+    useSearchParams
+} from 'next/navigation';
 
 import {
 	ArrowLeft,
@@ -22,12 +26,15 @@ import { useAds, useDeleteAd }  from '@/hooks/use-ads';
 import { ConfirmDialog }        from '@/components/shared/ConfirmDialog';
 
 
-export default function AdDetailPage() : React.JSX.Element {
-	const { id }   = useParams<{ id : string }>( );
-	const router   = useRouter( );
-	const adId     = Number( id );
+export default function AdDetailPage( ) : React.JSX.Element {
+	const { id }       = useParams<{ id : string }>( );
+	const router       = useRouter( );
+	const searchParams = useSearchParams( );
+	const adId         = Number( id );
+	const modeParam    = searchParams.get( 'mode' );
+	const isVigent     = modeParam !== 'historicos';
 
-	const { data : ads, isLoading } = useAds( );
+	const { data : ads, isLoading } = useAds( isVigent );
 	const deleteMutation            = useDeleteAd( );
 
 	const ad = ads?.find( ( a ) => a.id === adId );
@@ -195,7 +202,11 @@ export default function AdDetailPage() : React.JSX.Element {
 
 					<button
 						id        = "ad-detail-edit"
-						onClick   = { ( ) => router.push( `/dashboard/ads/form?id=${ ad.id }` ) }
+						onClick   = { ( ) => {
+							const params = new URLSearchParams( searchParams.toString( ) );
+							params.set( 'id', String( ad.id ) );
+							router.push( `/dashboard/ads/form?${ params.toString( ) }` );
+						} }
 						className = "flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 cursor-pointer"
 					>
 						<Pencil className="size-4" /> Editar
