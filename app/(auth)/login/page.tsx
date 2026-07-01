@@ -2,8 +2,8 @@ import { LoginButton } from '@/components/shared/auth/login-button';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title       : 'Iniciar sesión — Project',
-    description : 'Inicia sesión con tu cuenta de Microsoft para acceder a Project.',
+    title       : 'Iniciar sesión Publicidades',
+    description : 'Inicia sesión con tu cuenta de Microsoft para acceder a Gestión de Publicidades.',
 };
 
 export default function LoginPage(): React.JSX.Element {
