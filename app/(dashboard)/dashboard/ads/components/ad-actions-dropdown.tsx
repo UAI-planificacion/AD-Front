@@ -7,7 +7,7 @@ import {
 	MoreVertical,
 	MoreHorizontal,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import {
 	DropdownMenu,
@@ -36,7 +36,8 @@ export function AdActionsDropdown( {
 	variant,
 	activo,
 } : AdActionsDropdownProps ) : React.JSX.Element {
-	const router = useRouter();
+	const router       = useRouter( );
+	const searchParams = useSearchParams( );
 
 	const isCard = variant === 'card';
 
@@ -61,7 +62,7 @@ export function AdActionsDropdown( {
 			<DropdownMenuContent align="end" className="w-40 rounded-xl">
 				<DropdownMenuItem
 					id        = { isCard ? `ads-card-view-${ adId }` : `ads-view-${ adId }` }
-					onClick   = { ( ) => router.push( `/dashboard/ads/${ adId }` ) }
+					onClick   = { ( ) => router.push( `/dashboard/ads/${ adId }?${ searchParams.toString( ) }` ) }
 					className = "gap-2 cursor-pointer"
 				>
 					<Eye className="size-3.5" />
@@ -70,7 +71,11 @@ export function AdActionsDropdown( {
 
 				<DropdownMenuItem
 					id        = { isCard ? `ads-card-edit-${ adId }` : `ads-edit-${ adId }` }
-					onClick   = { ( ) => router.push( `/dashboard/ads/form?id=${ adId }` ) }
+					onClick   = { ( ) => {
+						const params = new URLSearchParams( searchParams.toString( ) );
+						params.set( 'id', String( adId ) );
+						router.push( `/dashboard/ads/form?${ params.toString( ) }` );
+					} }
 					className = "gap-2 cursor-pointer"
 				>
 					<Pencil className="size-3.5" />
