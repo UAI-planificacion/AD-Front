@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📺 Plataforma de Gestión de Publicidades (UAI)
 
-## Getting Started
+> Plataforma web moderna e interactiva para la programación, distribución y administración de contenidos publicitarios en pantallas verticales en los campus de la Universidad Adolfo Ibáñez.
 
-First, run the development server:
+---
+
+## ✨ Características Principales
+
+### 📊 Dashboard Operativo (KPIs Dinámicos)
+* **Control en una sola fila**: 4 indicadores dinámicos clave:
+  * **Total de Publicidades**: Métrica general con desglose de anuncios activos e inactivos.
+  * **Publicidades Activas**: Porcentaje de cobertura y anuncios actualmente en circulación.
+  * **Por Vencer**: Monitoreo de anuncios que expiran en las próximas 72 horas con mensajes personalizados ("Hoy caducan X publicidades").
+  * **Programadas**: Conteo de anuncios listos para publicarse automáticamente en fechas futuras.
+
+### 📅 Programación y Segmentación Avanzada
+* **Rango de Fechas exacto**: Selección de vigencia de inicio y fin en el calendario.
+* **Horarios diarios flexibles**: Horario de proyección diaria detallado por minutos (ej. `08:00` a `20:00`).
+* **Asignación de Sedes y Edificios**: Segmentación y distribución modular por campus:
+  * **Peñalolén** (Edificios 1 al 6)
+  * **Errázuriz** (Edificio 7)
+  * **Vitacura** (Edificio 8)
+  * **Viña del Mar** (Edificios 9 al 14)
+
+### ⚙️ Lógica Inteligente de Estado
+* **Switch Reactivo**: Control manual del estado activo del anuncio con restricciones de tiempo.
+* **Auto-Desactivación**: Los anuncios cuya fecha final expira se apagan e inhabilitan automáticamente.
+* **Auto-Activación**: Si un anuncio expirado es reprogramado para el futuro, el Switch se activa automáticamente de forma inteligente.
+* **Confirmación por Fechas**: Advertencia emergente mediante `ConfirmDialog` al intentar guardar anuncios inactivos cuyas fechas no han sido actualizadas.
+
+### 🌐 Filtros Bidireccionales con Persistencia en URL
+* Todos los filtros y parámetros del listado (`mode`, `q`, `status`, `tipo`, `edificios`, etc.) se sincronizan en tiempo real con la query de la URL para permitir una navegación fluida, guardando el estado al refrescar la página.
+
+### 🔒 Acceso Seguro
+* Integración nativa con cuentas institucionales a través de Microsoft Social Auth.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+* **Framework**: [Next.js 16](https://nextjs.org/) (App Router & React Server Components)
+* **Estilos**: Tailwind CSS v4 & Lucide Icons
+* **Estado y Consultas**: React Query (TanStack Query)
+* **Formularios e Integraciones**: React Hook Form & Zod para validación de esquemas
+* **Librerías de Fechas**: date-fns
+* **Gestor de Paquetes**: `pnpm`
+
+---
+
+## 🚀 Inicio Rápido
+
+### Requisitos Previos
+
+Asegúrate de tener instalado [Node.js](https://nodejs.org/) y el gestor de paquetes `pnpm`.
+
+### Instalación de Dependencias
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Ejecutar en Desarrollo
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+El servidor estará disponible en [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+### Compilar para Producción
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm build
+pnpm start
+```
