@@ -1,7 +1,15 @@
 'use client';
 
-import { Suspense, useState, useMemo }  from 'react';
-import { useRouter, useSearchParams }   from 'next/navigation';
+import {
+    Suspense,
+    useState,
+    useMemo,
+    useEffect
+} from 'react';
+import {
+    useRouter,
+    useSearchParams
+} from 'next/navigation';
 
 import {
 	Plus,
@@ -42,15 +50,39 @@ function AdsPageContent() : React.JSX.Element {
 	const viewParam     = searchParams.get( 'view' );
 	const viewMode      = viewParam === 'card' ? 'card' : 'table';
 
-	const [ search, setSearch ] = useState( '' );
+	const [ search, setSearch ] = useState( ( ) => searchParams.get( 'q' ) || '' );
+	const [ debouncedSearch, setDebouncedSearch ] = useState( ( ) => searchParams.get( 'q' ) || '' );
 
 	// Estados de filtro (datasetMode es string[] por compatibilidad con Base UI ToggleGroup)
-	const [ datasetMode, setDatasetMode ]         = useState<string[]>( [ 'vigentes' ] );
-	const [ filterActivo, setFilterActivo ]       = useState<string[]>( [] );
-	const [ filterTipo, setFilterTipo ]           = useState<string[]>( [] );
-	const [ filterEdificios, setFilterEdificios ] = useState<string[]>( [] );
-	const [ filterDuracion, setFilterDuracion ]   = useState<{ min : number | ''; max : number | '' }>({ min: '', max: '' });
-	const [ filterVigencia, setFilterVigencia ]   = useState<{ from? : string; to? : string } | null>( null );
+	const [ datasetMode, setDatasetMode ]         = useState<string[]>( ( ) => {
+		const mode = searchParams.get( 'mode' );
+		return mode ? [ mode ] : [ 'vigentes' ];
+	} );
+	const [ filterActivo, setFilterActivo ]       = useState<string[]>( ( ) => {
+		const status = searchParams.get( 'status' );
+		return status ? status.split( ',' ) : [ ];
+	} );
+	const [ filterTipo, setFilterTipo ]           = useState<string[]>( ( ) => {
+		const tipo = searchParams.get( 'tipo' );
+		return tipo ? tipo.split( ',' ) : [ ];
+	} );
+	const [ filterEdificios, setFilterEdificios ] = useState<string[]>( ( ) => {
+		const edificios = searchParams.get( 'edificios' );
+		return edificios ? edificios.split( ',' ) : [ ];
+	} );
+	const [ filterDuracion, setFilterDuracion ]   = useState<{ min : number | ''; max : number | '' }>( ( ) => {
+		const min = searchParams.get( 'durMin' );
+		const max = searchParams.get( 'durMax' );
+		return {
+			min	: min ? Number( min ) : '',
+			max	: max ? Number( max ) : '',
+		};
+	} );
+	const [ filterVigencia, setFilterVigencia ]   = useState<{ from? : string; to? : string } | null>( ( ) => {
+		const from = searchParams.get( 'from' );
+		const to = searchParams.get( 'to' );
+		return from ? { from, to : to || undefined } : null;
+	} );
 
 	const isVigentes                         = datasetMode[ 0 ] === 'vigentes';
 	const { data : ads, isLoading, isError } = useAds( isVigentes );
@@ -60,6 +92,138 @@ function AdsPageContent() : React.JSX.Element {
 		if ( !ads || ads.length === 0 ) return 60;
 		return Math.max( ...ads.map( ( a ) => a.duracion ), 60 );
 	}, [ ads ] );
+
+	// Debounce para la búsqueda en la URL
+	useEffect( ( ) => {
+		const timer = setTimeout( ( ) => {
+			setDebouncedSearch( search );
+		}, 300 );
+
+		return ( ) => clearTimeout( timer );
+	}, [ search ] );
+
+	// Sincronizar estados locales a la URL
+	useEffect( ( ) => {
+		const params = new URLSearchParams( window.location.search );
+
+		if ( debouncedSearch ) {
+			params.set( 'q', debouncedSearch );
+		} else {
+			params.delete( 'q' );
+		}
+
+		if ( datasetMode[ 0 ] && datasetMode[ 0 ] !== 'vigentes' ) {
+			params.set( 'mode', datasetMode[ 0 ] );
+		} else {
+			params.delete( 'mode' );
+		}
+
+		if ( filterActivo.length > 0 ) {
+			params.set( 'status', filterActivo.join( ',' ) );
+		} else {
+			params.delete( 'status' );
+		}
+
+		if ( filterTipo.length > 0 ) {
+			params.set( 'tipo', filterTipo.join( ',' ) );
+		} else {
+			params.delete( 'tipo' );
+		}
+
+		if ( filterEdificios.length > 0 ) {
+			params.set( 'edificios', filterEdificios.join( ',' ) );
+		} else {
+			params.delete( 'edificios' );
+		}
+
+		if ( filterDuracion.min !== '' ) {
+			params.set( 'durMin', String( filterDuracion.min ) );
+		} else {
+			params.delete( 'durMin' );
+		}
+
+		if ( filterDuracion.max !== '' ) {
+			params.set( 'durMax', String( filterDuracion.max ) );
+		} else {
+			params.delete( 'durMax' );
+		}
+
+		if ( filterVigencia?.from ) {
+			params.set( 'from', filterVigencia.from );
+			if ( filterVigencia.to ) {
+				params.set( 'to', filterVigencia.to );
+			} else {
+				params.delete( 'to' );
+			}
+		} else {
+			params.delete( 'from' );
+			params.delete( 'to' );
+		}
+
+		const currentString = new URLSearchParams( window.location.search ).toString();
+		const newString     = params.toString();
+
+		if ( currentString !== newString ) {
+			router.replace( `?${ newString }`, { scroll : false } );
+		}
+	}, [ debouncedSearch, datasetMode, filterActivo, filterTipo, filterEdificios, filterDuracion, filterVigencia, router ] );
+
+	// Sincronizar cambios de la URL (back/forward) al estado local
+	useEffect( ( ) => {
+		const timer = setTimeout( ( ) => {
+			const qParam = searchParams.get( 'q' ) || '';
+			if ( qParam !== search ) {
+				setSearch( qParam );
+			}
+
+			const modeParam = searchParams.get( 'mode' ) || 'vigentes';
+			if ( modeParam !== datasetMode[ 0 ] ) {
+				setDatasetMode( [ modeParam ] );
+			}
+
+			const statusParam = searchParams.get( 'status' );
+			const newStatus   = statusParam ? statusParam.split( ',' ) : [ ];
+			if ( JSON.stringify( newStatus ) !== JSON.stringify( filterActivo ) ) {
+				setFilterActivo( newStatus );
+			}
+
+			const tipoParam = searchParams.get( 'tipo' );
+			const newTipo   = tipoParam ? tipoParam.split( ',' ) : [ ];
+			if ( JSON.stringify( newTipo ) !== JSON.stringify( filterTipo ) ) {
+				setFilterTipo( newTipo );
+			}
+
+			const edificiosParam = searchParams.get( 'edificios' );
+			const newEdificios   = edificiosParam ? edificiosParam.split( ',' ) : [ ];
+			if ( JSON.stringify( newEdificios ) !== JSON.stringify( filterEdificios ) ) {
+				setFilterEdificios( newEdificios );
+			}
+
+			const durMinParam = searchParams.get( 'durMin' );
+			const durMaxParam = searchParams.get( 'durMax' );
+			const newDurMin   = durMinParam ? Number( durMinParam ) : '';
+			const newDurMax   = durMaxParam ? Number( durMaxParam ) : '';
+			if ( newDurMin !== filterDuracion.min || newDurMax !== filterDuracion.max ) {
+				setFilterDuracion( {
+					min	: newDurMin,
+					max	: newDurMax,
+				} );
+			}
+
+			const fromParam   = searchParams.get( 'from' );
+			const toParam     = searchParams.get( 'to' );
+			const newVigencia = fromParam ? {
+				from	: fromParam,
+				to		: toParam || undefined,
+			} : null;
+			if ( JSON.stringify( newVigencia ) !== JSON.stringify( filterVigencia ) ) {
+				setFilterVigencia( newVigencia );
+			}
+		}, 0 );
+
+		return ( ) => clearTimeout( timer );
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ searchParams ] );
 
 	function handleEdificiosChange( selected : string[] | string | undefined ) : void {
 		if ( !selected ) {
@@ -73,6 +237,12 @@ function AdsPageContent() : React.JSX.Element {
 
 	function handleVigenciaChange( range : { from : string; to? : string } | null ) : void {
 		setFilterVigencia( range );
+	}
+
+	function handleViewModeChange( mode : 'table' | 'card' ) : void {
+		const params = new URLSearchParams( searchParams.toString() );
+		params.set( 'view', mode );
+		router.push( `?${ params.toString() }` );
 	}
 
 	return (
@@ -167,7 +337,7 @@ function AdsPageContent() : React.JSX.Element {
 					{ /* Card vs Table View Switcher */ }
 					<div className="flex items-center rounded-xl border border-border p-1 bg-muted/20">
 						<button
-							onClick   = { ( ) => router.push( '/dashboard/ads?view=table' ) }
+							onClick   = { ( ) => handleViewModeChange( 'table' ) }
 							className = { `p-1.5 rounded-lg transition-colors cursor-pointer ${
 								viewMode === 'table'
 									? 'bg-background text-foreground shadow-2xs'
@@ -179,7 +349,7 @@ function AdsPageContent() : React.JSX.Element {
 						</button>
 
 						<button
-							onClick   = { ( ) => router.push( '/dashboard/ads?view=card' ) }
+							onClick   = { ( ) => handleViewModeChange( 'card' ) }
 							className = { `p-1.5 rounded-lg transition-colors cursor-pointer ${
 								viewMode === 'card'
 									? 'bg-background text-foreground shadow-2xs'
@@ -193,7 +363,7 @@ function AdsPageContent() : React.JSX.Element {
 
 					<button
 						id        = "ads-create"
-						onClick   = { ( ) => router.push( '/dashboard/ads/form' ) }
+						onClick   = { ( ) => router.push( `/dashboard/ads/form?${ searchParams.toString( ) }` ) }
 						className = "flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 cursor-pointer"
 					>
 						<Plus className="size-4" />
